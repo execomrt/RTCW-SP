@@ -745,7 +745,7 @@ UI_DrawPlayer
 */
 void WM_getWeaponAnim( const char **torso_anim, const char **legs_anim );       // NERVE - SMF
 
-void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int time ) {
+void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int time, scralign_t align ) {
 	refdef_t refdef;
 	refEntity_t legs;
 	refEntity_t torso;
@@ -780,7 +780,7 @@ void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int ti
 		}
 	}
 
-	UI_AdjustFrom640( &x, &y, &w, &h );
+	UI_AdjustFrom640( &x, &y, &w, &h, align );
 
 	y -= jumpHeight;
 

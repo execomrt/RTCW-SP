@@ -32,7 +32,7 @@ If you have questions concerning this license or the applicable additional terms
 // q_shared.h -- included first by ALL program modules.
 // A user mod should never modify this file
 
-#define Q3_VERSION      "Wolf 1.41"
+#define Q3_VERSION      "Wolf 1.42d"	// Knightmare- was 1.41
 // ver 1.0.0	- release
 // ver 1.0.1	- post-release work
 // ver 1.1.0	- patch 1 (12/12/01)
@@ -732,6 +732,22 @@ char *Q_CleanStr( char *string );
 int Q_strncasecmp( char *s1, char *s2, int n );
 int Q_strcasecmp( char *s1, char *s2 );
 // done.
+
+// TTimo
+// vsnprintf is ISO/IEC 9899:1999
+// abstracting this to make it portable
+#ifdef WIN32
+//#define Q_vsnprintf _vsnprintf
+__inline int Q_vsnprintf (char *Dest, size_t Count, const char *Format, va_list Args) {
+	int ret = _vsnprintf(Dest, Count, Format, Args);
+	Dest[Count-1] = 0;	// null terminate
+	return ret;
+}
+#else
+// TODO: Mac define?
+#define Q_vsnprintf vsnprintf
+#endif
+
 //=============================================
 
 // 64-bit integers for global rankings interface

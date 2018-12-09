@@ -271,16 +271,18 @@ void AssetCache() {
 //	uiInfo.newHighScoreSound = trap_S_RegisterSound("sound/feedback/voc_newhighscore.wav");
 }
 
-void _UI_DrawSides( float x, float y, float w, float h, float size ) {
-	UI_AdjustFrom640( &x, &y, &w, &h );
-	size *= uiInfo.uiDC.xscale;
+void _UI_DrawSides( float x, float y, float w, float h, float size, scralign_t align ) {
+	UI_AdjustFrom640( &x, &y, &w, &h, align );
+	UI_AdjustFrom640( NULL, NULL, &size, NULL, align );	// Knighmare- use anamorphic scaling
+//	size *= uiInfo.uiDC.xscale;
 	trap_R_DrawStretchPic( x, y, size, h, 0, 0, 0, 0, uiInfo.uiDC.whiteShader );
 	trap_R_DrawStretchPic( x + w - size, y, size, h, 0, 0, 0, 0, uiInfo.uiDC.whiteShader );
 }
 
-void _UI_DrawTopBottom( float x, float y, float w, float h, float size ) {
-	UI_AdjustFrom640( &x, &y, &w, &h );
-	size *= uiInfo.uiDC.yscale;
+void _UI_DrawTopBottom( float x, float y, float w, float h, float size, scralign_t align ) {
+	UI_AdjustFrom640( &x, &y, &w, &h, align );
+	UI_AdjustFrom640( NULL, NULL, NULL, &size, align );	// Knighmare- use anamorphic scaling
+//	size *= uiInfo.uiDC.yscale;
 	trap_R_DrawStretchPic( x, y, w, size, 0, 0, 0, 0, uiInfo.uiDC.whiteShader );
 	trap_R_DrawStretchPic( x, y + h - size, w, size, 0, 0, 0, 0, uiInfo.uiDC.whiteShader );
 }
@@ -291,11 +293,11 @@ UI_DrawRect
 Coordinates are 640*480 virtual values
 =================
 */
-void _UI_DrawRect( float x, float y, float width, float height, float size, const float *color ) {
+void _UI_DrawRect( float x, float y, float width, float height, float size, const float *color, scralign_t align ) {
 	trap_R_SetColor( color );
 
-	_UI_DrawTopBottom( x, y, width, height, size );
-	_UI_DrawSides( x, y, width, height, size );
+	_UI_DrawTopBottom( x, y, width, height, size, align );
+	_UI_DrawSides( x, y, width, height, size, align );
 
 	trap_R_SetColor( NULL );
 }
@@ -395,15 +397,15 @@ int Text_Height( const char *text, int font, float scale, int limit ) {
 	return max * useScale;
 }
 
-void Text_PaintChar( float x, float y, float width, float height, int font, float scale, float s, float t, float s2, float t2, qhandle_t hShader ) {
+void Text_PaintChar( float x, float y, float width, float height, int font, float scale, float s, float t, float s2, float t2, qhandle_t hShader, scralign_t align ) {
 	float w, h;
 	w = width * scale;
 	h = height * scale;
-	UI_AdjustFrom640( &x, &y, &w, &h );
+	UI_AdjustFrom640( &x, &y, &w, &h, align );
 	trap_R_DrawStretchPic( x, y, w, h, s, t, s2, t2, hShader );
 }
 
-void Text_Paint( float x, float y, int font, float scale, vec4_t color, const char *text, float adjust, int limit, int style ) {
+void Text_Paint( float x, float y, int font, float scale, vec4_t color, const char *text, float adjust, int limit, int style, scralign_t align ) {
 	int len, count;
 	vec4_t newColor;
 	glyphInfo_t *glyph;
@@ -459,7 +461,7 @@ void Text_Paint( float x, float y, int font, float scale, vec4_t color, const ch
 									glyph->t,
 									glyph->s2,
 									glyph->t2,
-									glyph->glyph );
+									glyph->glyph, align );
 					trap_R_SetColor( newColor );
 					colorBlack[3] = 1.0;
 				}
@@ -472,7 +474,7 @@ void Text_Paint( float x, float y, int font, float scale, vec4_t color, const ch
 								glyph->t,
 								glyph->s2,
 								glyph->t2,
-								glyph->glyph );
+								glyph->glyph, align );
 
 				x += ( glyph->xSkip * useScale ) + adjust;
 				s++;
@@ -483,7 +485,7 @@ void Text_Paint( float x, float y, int font, float scale, vec4_t color, const ch
 	}
 }
 
-void Text_PaintWithCursor( float x, float y, int font, float scale, vec4_t color, const char *text, int cursorPos, char cursor, int limit, int style ) {
+void Text_PaintWithCursor( float x, float y, int font, float scale, vec4_t color, const char *text, int cursorPos, char cursor, int limit, int style, scralign_t align ) {
 	int len, count;
 	vec4_t newColor;
 	glyphInfo_t *glyph, *glyph2;
@@ -541,7 +543,7 @@ void Text_PaintWithCursor( float x, float y, int font, float scale, vec4_t color
 									glyph->t,
 									glyph->s2,
 									glyph->t2,
-									glyph->glyph );
+									glyph->glyph, align );
 					colorBlack[3] = 1.0;
 					trap_R_SetColor( newColor );
 				}
@@ -554,7 +556,7 @@ void Text_PaintWithCursor( float x, float y, int font, float scale, vec4_t color
 								glyph->t,
 								glyph->s2,
 								glyph->t2,
-								glyph->glyph );
+								glyph->glyph, align );
 
 				// CG_DrawPic(x, y - yadj, scale * uiDC.Assets.textFont.glyphs[text[i]].imageWidth, scale * uiDC.Assets.textFont.glyphs[text[i]].imageHeight, uiDC.Assets.textFont.glyphs[text[i]].glyph);
 				yadj = useScale * glyph2->top;
@@ -568,7 +570,7 @@ void Text_PaintWithCursor( float x, float y, int font, float scale, vec4_t color
 									glyph2->t,
 									glyph2->s2,
 									glyph2->t2,
-									glyph2->glyph );
+									glyph2->glyph, align );
 				}
 
 				x += ( glyph->xSkip * useScale );
@@ -588,7 +590,7 @@ void Text_PaintWithCursor( float x, float y, int font, float scale, vec4_t color
 							glyph2->t,
 							glyph2->s2,
 							glyph2->t2,
-							glyph2->glyph );
+							glyph2->glyph, align );
 
 		}
 
@@ -683,7 +685,7 @@ void UI_DrawCenteredPic( qhandle_t image, int w, int h ) {
 	int x, y;
 	x = ( SCREEN_WIDTH - w ) / 2;
 	y = ( SCREEN_HEIGHT - h ) / 2;
-	UI_DrawHandlePic( x, y, w, h, image );
+	UI_DrawHandlePic( x, y, w, h, image, ALIGN_CENTER );
 }
 
 int frameCount = 0;
@@ -736,7 +738,13 @@ void _UI_Refresh( int realtime ) {
 	if ( Menu_Count() > 0 ) {
 		uiMenuCommand_t mymenu = _UI_GetActiveMenu();
 		if ( mymenu != UIMENU_BRIEFING ) {
-			UI_DrawHandlePic( uiInfo.uiDC.cursorx - 16, uiInfo.uiDC.cursory - 16, 32, 32, uiInfo.uiDC.Assets.cursor );
+		//	UI_DrawHandlePic( uiInfo.uiDC.cursorx - 16, uiInfo.uiDC.cursory - 16, 32, 32, uiInfo.uiDC.Assets.cursor, ALIGN_STRETCH );
+			// Knightmare- changed to scale only cursor size, not coords
+			int		x, y, w, h;
+			x = uiInfo.uiDC.cursorx - (16 * uiInfo.uiDC.minscale);
+			y = uiInfo.uiDC.cursory - (16 * uiInfo.uiDC.minscale);
+			w = h = 32 * uiInfo.uiDC.minscale;
+			trap_R_DrawStretchPic( x, y, w, h, 0, 0, 1, 1, uiInfo.uiDC.Assets.cursor );
 		}
 	}
 
@@ -1176,7 +1184,7 @@ static void UI_DrawHandicap( rectDef_t *rect, int font, float scale, vec4_t colo
 	h = Com_Clamp( 5, 100, trap_Cvar_VariableValue( "handicap" ) );
 	i = 20 - h / 5;
 
-	Text_Paint( rect->x, rect->y, font, scale, color, handicapValues[i], 0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, handicapValues[i], 0, 0, textStyle, rect->scrAlign );
 }
 
 //----(SA)	added
@@ -1197,7 +1205,7 @@ UI_DrawClanName
 ==============
 */
 static void UI_DrawClanName( rectDef_t *rect, int font, float scale, vec4_t color, int textStyle ) {
-	Text_Paint( rect->x, rect->y, font, scale, color, UI_Cvar_VariableString( "ui_teamName" ), 0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, UI_Cvar_VariableString( "ui_teamName" ), 0, 0, textStyle, rect->scrAlign );
 }
 
 
@@ -1221,7 +1229,7 @@ static void UI_SetCapFragLimits( qboolean uiVars ) {
 }
 // ui_gameType assumes gametype 0 is -1 ALL and will not show
 static void UI_DrawGameType( rectDef_t *rect, int font, float scale, vec4_t color, int textStyle ) {
-	Text_Paint( rect->x, rect->y, font, scale, color, uiInfo.gameTypes[ui_gameType.integer].gameType, 0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, uiInfo.gameTypes[ui_gameType.integer].gameType, 0, 0, textStyle, rect->scrAlign );
 }
 
 static void UI_DrawNetGameType( rectDef_t *rect, int font, float scale, vec4_t color, int textStyle ) {
@@ -1229,14 +1237,14 @@ static void UI_DrawNetGameType( rectDef_t *rect, int font, float scale, vec4_t c
 		trap_Cvar_Set( "ui_netGameType", "0" );
 		trap_Cvar_Set( "ui_actualNetGameType", "0" );
 	}
-	Text_Paint( rect->x, rect->y, font, scale, color, uiInfo.gameTypes[ui_netGameType.integer].gameType, 0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, uiInfo.gameTypes[ui_netGameType.integer].gameType, 0, 0, textStyle, rect->scrAlign );
 }
 
 static void UI_DrawJoinGameType( rectDef_t *rect, int font, float scale, vec4_t color, int textStyle ) {
 	if ( ui_joinGameType.integer < 0 || ui_joinGameType.integer > uiInfo.numJoinGameTypes ) {
 		trap_Cvar_Set( "ui_joinGameType", "0" );
 	}
-	Text_Paint( rect->x, rect->y, font, scale, color, uiInfo.joinGameTypes[ui_joinGameType.integer].gameType, 0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, uiInfo.joinGameTypes[ui_joinGameType.integer].gameType, 0, 0, textStyle, rect->scrAlign );
 }
 
 
@@ -1295,7 +1303,7 @@ static void UI_DrawSaveGameShot( rectDef_t *rect, float scale, vec4_t color ) {
 		image = uiInfo.savegameList[i].sshotImage;
 	}
 
-	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, image );
+	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, image, rect->scrAlign );
 	trap_R_SetColor( NULL );
 
 }
@@ -1349,7 +1357,7 @@ static void UI_DrawClanLogo( rectDef_t *rect, float scale, vec4_t color ) {
 			uiInfo.teamList[i].teamIcon_Name    = trap_R_RegisterShaderNoMip( va( "%s_name", uiInfo.teamList[i].imageName ) );
 		}
 
-		UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon );
+		UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon, rect->scrAlign );
 		trap_R_SetColor( NULL );
 	}
 }
@@ -1377,7 +1385,7 @@ static void UI_DrawClanCinematic( rectDef_t *rect, float scale, vec4_t color ) {
 			}
 		} else {
 			trap_R_SetColor( color );
-			UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon );
+			UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon, rect->scrAlign );
 			trap_R_SetColor( NULL );
 		}
 	}
@@ -1420,7 +1428,7 @@ static void UI_DrawSkill( rectDef_t *rect, int font, float scale, vec4_t color, 
 	if ( i < 1 || i > numSkillLevels ) {
 		i = 1;
 	}
-	Text_Paint( rect->x, rect->y, font, scale, color, skillLevels[i - 1],0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, skillLevels[i - 1],0, 0, textStyle, rect->scrAlign );
 }
 
 
@@ -1428,7 +1436,7 @@ static void UI_DrawTeamName( rectDef_t *rect, int font, float scale, vec4_t colo
 	int i;
 	i = UI_TeamIndexFromName( UI_Cvar_VariableString( ( blue ) ? "ui_blueTeam" : "ui_redTeam" ) );
 	if ( i >= 0 && i < uiInfo.teamCount ) {
-		Text_Paint( rect->x, rect->y, font, scale, color, va( "%s: %s", ( blue ) ? "Blue" : "Red", uiInfo.teamList[i].teamName ),0, 0, textStyle );
+		Text_Paint( rect->x, rect->y, font, scale, color, va( "%s: %s", ( blue ) ? "Blue" : "Red", uiInfo.teamList[i].teamName ),0, 0, textStyle, rect->scrAlign );
 	}
 }
 
@@ -1463,8 +1471,8 @@ static void UI_DrawTeamMember( rectDef_t *rect, int font, float scale, vec4_t co
 }
 
 static void UI_DrawEffects( rectDef_t *rect, float scale, vec4_t color ) {
-	UI_DrawHandlePic( rect->x, rect->y - 14, 128, 8, uiInfo.uiDC.Assets.fxBasePic );
-	UI_DrawHandlePic( rect->x + uiInfo.effectsColor * 16 + 8, rect->y - 16, 16, 12, uiInfo.uiDC.Assets.fxPic[uiInfo.effectsColor] );
+	UI_DrawHandlePic( rect->x, rect->y - 14, 128, 8, uiInfo.uiDC.Assets.fxBasePic, rect->scrAlign );
+	UI_DrawHandlePic( rect->x + uiInfo.effectsColor * 16 + 8, rect->y - 16, 16, 12, uiInfo.uiDC.Assets.fxPic[uiInfo.effectsColor], rect->scrAlign );
 }
 
 //----(SA)	added
@@ -1488,7 +1496,7 @@ static void UI_DrawMapLevelshot( rectDef_t *rect ) {
 		levelshot = trap_R_RegisterShaderNoMip( "menu/art/unknownmap" );
 	}
 
-	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, levelshot );
+	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, levelshot, rect->scrAlign );
 }
 
 /*
@@ -1524,7 +1532,7 @@ flags:
 
 #define BAR_BORDERSIZE 2
 
-void UI_FilledBar( float x, float y, float w, float h, float *startColor, float *endColor, const float *bgColor, float frac, int flags ) {
+void UI_FilledBar( float x, float y, float w, float h, float *startColor, float *endColor, const float *bgColor, float frac, int flags, scralign_t align ) {
 	vec4_t backgroundcolor = {1, 1, 1, 0.25f}, colorAtPos;  // colorAtPos is the lerped color if necessary
 	int indent = BAR_BORDERSIZE;
 
@@ -1554,7 +1562,7 @@ void UI_FilledBar( float x, float y, float w, float h, float *startColor, float 
 					   y,
 					   w,
 					   h,
-					   backgroundcolor );
+					   backgroundcolor, align );
 
 		if ( flags & BAR_BGSPACING_X0Y0 ) {          // fill the whole box (no border)
 
@@ -1581,9 +1589,9 @@ void UI_FilledBar( float x, float y, float w, float h, float *startColor, float 
 		}
 
 		if ( flags & BAR_LERP_COLOR ) {
-			UI_FillRect( x, y, w, h * frac, colorAtPos );
+			UI_FillRect( x, y, w, h * frac, colorAtPos, align );
 		} else {
-			UI_FillRect( x, y, w, h * frac, startColor );
+			UI_FillRect( x, y, w, h * frac, startColor, align );
 		}
 
 	} else {
@@ -1595,9 +1603,9 @@ void UI_FilledBar( float x, float y, float w, float h, float *startColor, float 
 		}
 
 		if ( flags & BAR_LERP_COLOR ) {
-			UI_FillRect( x, y, w * frac, h, colorAtPos );
+			UI_FillRect( x, y, w * frac, h, colorAtPos, align );
 		} else {
-			UI_FillRect( x, y, w * frac, h, startColor );
+			UI_FillRect( x, y, w * frac, h, startColor, align );
 		}
 	}
 
@@ -1632,10 +1640,10 @@ static void UI_DrawLoadStatus( rectDef_t *rect, vec4_t color, int align ) {
 			percentDone = 0.97;
 		}
 
-		UI_FilledBar( rect->x, rect->y, rect->w, rect->h, color, NULL, NULL, percentDone, flags ); // flags (BAR_CENTER|BAR_VERT|BAR_LERP_COLOR)
+		UI_FilledBar( rect->x, rect->y, rect->w, rect->h, color, NULL, NULL, percentDone, flags, rect->scrAlign ); // flags (BAR_CENTER|BAR_VERT|BAR_LERP_COLOR)
 	} else {
 //		Text_Paint( rect->x, rect->y, UI_FONT_DEFAULT, 0.2f, color, "Please Wait...", 0, 0, 0);
-		Text_Paint( rect->x, rect->y, UI_FONT_DEFAULT, 0.2f, color, DC->getTranslatedString( "pleasewait" ), 0, 0, 0 );
+		Text_Paint( rect->x, rect->y, UI_FONT_DEFAULT, 0.2f, color, DC->getTranslatedString( "pleasewait" ), 0, 0, 0, rect->scrAlign );
 	}
 
 }
@@ -1660,9 +1668,9 @@ static void UI_DrawMapPreview( rectDef_t *rect, float scale, vec4_t color, qbool
 	}
 
 	if ( uiInfo.mapList[map].levelShot > 0 ) {
-		UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.mapList[map].levelShot );
+		UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.mapList[map].levelShot, rect->scrAlign );
 	} else {
-		UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, trap_R_RegisterShaderNoMip( "menu/art/unknownmap" ) );
+		UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, trap_R_RegisterShaderNoMip( "menu/art/unknownmap" ), rect->scrAlign );
 	}
 }
 
@@ -1679,7 +1687,7 @@ static void UI_DrawMapTimeToBeat( rectDef_t *rect, int font, float scale, vec4_t
 	minutes = time / 60;
 	seconds = time % 60;
 
-	Text_Paint( rect->x, rect->y, font, scale, color, va( "%02i:%02i", minutes, seconds ), 0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, va( "%02i:%02i", minutes, seconds ), 0, 0, textStyle, rect->scrAlign );
 }
 
 
@@ -1794,7 +1802,7 @@ static void UI_DrawPlayerModel( rectDef_t *rect ) {
 
 	//	info.moveAngles[YAW] += 1;
 	//   UI_PlayerInfo_SetInfo( &info, LEGS_IDLE, TORSO_STAND, viewangles, moveangles, WP_MP40, qfalse );
-	UI_DrawPlayer( rect->x, rect->y, rect->w, rect->h, &info, uiInfo.uiDC.realTime / 2 );
+	UI_DrawPlayer( rect->x, rect->y, rect->w, rect->h, &info, uiInfo.uiDC.realTime / 2, rect->scrAlign );
 
 }
 
@@ -1802,15 +1810,15 @@ static void UI_DrawNetSource( rectDef_t *rect, int font, float scale, vec4_t col
 	if ( ui_netSource.integer < 0 || ui_netSource.integer > uiInfo.numGameTypes ) {
 		ui_netSource.integer = 0;
 	}
-	Text_Paint( rect->x, rect->y, font, scale, color, va( "Source: %s", netSources[ui_netSource.integer] ), 0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, va( "Source: %s", netSources[ui_netSource.integer] ), 0, 0, textStyle, rect->scrAlign );
 }
 
 static void UI_DrawNetMapPreview( rectDef_t *rect, float scale, vec4_t color ) {
 
 	if ( uiInfo.serverStatus.currentServerPreview > 0 ) {
-		UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.serverStatus.currentServerPreview );
+		UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.serverStatus.currentServerPreview, rect->scrAlign );
 	} else {
-		UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, trap_R_RegisterShaderNoMip( "menu/art/unknownmap" ) );
+		UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, trap_R_RegisterShaderNoMip( "menu/art/unknownmap" ), rect->scrAlign );
 	}
 }
 
@@ -1835,7 +1843,7 @@ static void UI_DrawNetFilter( rectDef_t *rect, int font, float scale, vec4_t col
 	if ( ui_serverFilterType.integer < 0 || ui_serverFilterType.integer > numServerFilters ) {
 		ui_serverFilterType.integer = 0;
 	}
-	Text_Paint( rect->x, rect->y, font, scale, color, va( "Filter: %s", serverFilters[ui_serverFilterType.integer].description ), 0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, va( "Filter: %s", serverFilters[ui_serverFilterType.integer].description ), 0, 0, textStyle, rect->scrAlign );
 }
 
 
@@ -1845,7 +1853,7 @@ static void UI_DrawTier( rectDef_t *rect, int font, float scale, vec4_t color, i
 	if ( i < 0 || i >= uiInfo.tierCount ) {
 		i = 0;
 	}
-	Text_Paint( rect->x, rect->y, font, scale, color, va( "Tier: %s", uiInfo.tierList[i].tierName ),0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, va( "Tier: %s", uiInfo.tierList[i].tierName ),0, 0, textStyle, rect->scrAlign );
 }
 
 static void UI_DrawTierMap( rectDef_t *rect, int index ) {
@@ -1859,7 +1867,7 @@ static void UI_DrawTierMap( rectDef_t *rect, int index ) {
 		uiInfo.tierList[i].mapHandles[index] = trap_R_RegisterShaderNoMip( va( "levelshots/%s", uiInfo.tierList[i].maps[index] ) );
 	}
 
-	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.tierList[i].mapHandles[index] );
+	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.tierList[i].mapHandles[index], rect->scrAlign );
 }
 
 static const char *UI_EnglishMapName( const char *map ) {
@@ -1883,7 +1891,7 @@ static void UI_DrawTierMapName( rectDef_t *rect, int font, float scale, vec4_t c
 		j = 0;
 	}
 
-	Text_Paint( rect->x, rect->y, font, scale, color, UI_EnglishMapName( uiInfo.tierList[i].maps[j] ), 0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, UI_EnglishMapName( uiInfo.tierList[i].maps[j] ), 0, 0, textStyle, rect->scrAlign );
 }
 
 static void UI_DrawTierGameType( rectDef_t *rect, int font, float scale, vec4_t color, int textStyle ) {
@@ -1897,7 +1905,7 @@ static void UI_DrawTierGameType( rectDef_t *rect, int font, float scale, vec4_t 
 		j = 0;
 	}
 
-	Text_Paint( rect->x, rect->y, font, scale, color, uiInfo.gameTypes[uiInfo.tierList[i].gameTypes[j]].gameType, 0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, uiInfo.gameTypes[uiInfo.tierList[i].gameTypes[j]].gameType, 0, 0, textStyle, rect->scrAlign );
 }
 
 // TTimo: unused
@@ -1992,7 +2000,7 @@ static void UI_DrawOpponent( rectDef_t *rect ) {
 		updateOpponentModel = qfalse;
 	}
 
-	UI_DrawPlayer( rect->x, rect->y, rect->w, rect->h, &info2, uiInfo.uiDC.realTime / 2 );
+	UI_DrawPlayer( rect->x, rect->y, rect->w, rect->h, &info2, uiInfo.uiDC.realTime / 2, rect->scrAlign );
 
 }
 
@@ -2038,7 +2046,7 @@ static void UI_DrawPlayerLogo( rectDef_t *rect, vec3_t color ) {
 	}
 
 	trap_R_SetColor( color );
-	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon );
+	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon, rect->scrAlign );
 	trap_R_SetColor( NULL );
 }
 
@@ -2051,7 +2059,7 @@ static void UI_DrawPlayerLogoMetal( rectDef_t *rect, vec3_t color ) {
 	}
 
 	trap_R_SetColor( color );
-	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon_Metal );
+	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon_Metal, rect->scrAlign );
 	trap_R_SetColor( NULL );
 }
 
@@ -2064,7 +2072,7 @@ static void UI_DrawPlayerLogoName( rectDef_t *rect, vec3_t color ) {
 	}
 
 	trap_R_SetColor( color );
-	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon_Name );
+	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon_Name, rect->scrAlign );
 	trap_R_SetColor( NULL );
 }
 
@@ -2077,7 +2085,7 @@ static void UI_DrawOpponentLogo( rectDef_t *rect, vec3_t color ) {
 	}
 
 	trap_R_SetColor( color );
-	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon );
+	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon, rect->scrAlign );
 	trap_R_SetColor( NULL );
 }
 
@@ -2090,7 +2098,7 @@ static void UI_DrawOpponentLogoMetal( rectDef_t *rect, vec3_t color ) {
 	}
 
 	trap_R_SetColor( color );
-	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon_Metal );
+	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon_Metal, rect->scrAlign );
 	trap_R_SetColor( NULL );
 }
 
@@ -2103,7 +2111,7 @@ static void UI_DrawOpponentLogoName( rectDef_t *rect, vec3_t color ) {
 	}
 
 	trap_R_SetColor( color );
-	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon_Name );
+	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiInfo.teamList[i].teamIcon_Name, rect->scrAlign );
 	trap_R_SetColor( NULL );
 }
 
@@ -2117,7 +2125,7 @@ static void UI_DrawAllMapsSelection( rectDef_t *rect, int font, float scale, vec
 }
 
 static void UI_DrawOpponentName( rectDef_t *rect, int font, float scale, vec4_t color, int textStyle ) {
-	Text_Paint( rect->x, rect->y, font, scale, color, UI_Cvar_VariableString( "ui_opponentName" ), 0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, UI_Cvar_VariableString( "ui_opponentName" ), 0, 0, textStyle, rect->scrAlign );
 }
 
 
@@ -2275,12 +2283,12 @@ static void UI_DrawBotName( rectDef_t *rect, int font, float scale, vec4_t color
 
 static void UI_DrawBotSkill( rectDef_t *rect, int font, float scale, vec4_t color, int textStyle ) {
 	if ( uiInfo.skillIndex >= 0 && uiInfo.skillIndex < numSkillLevels ) {
-		Text_Paint( rect->x, rect->y, font, scale, color, skillLevels[uiInfo.skillIndex], 0, 0, textStyle );
+		Text_Paint( rect->x, rect->y, font, scale, color, skillLevels[uiInfo.skillIndex], 0, 0, textStyle, rect->scrAlign );
 	}
 }
 
 static void UI_DrawRedBlue( rectDef_t *rect, int font, float scale, vec4_t color, int textStyle ) {
-	Text_Paint( rect->x, rect->y, font, scale, color, ( uiInfo.redBlue == 0 ) ? "Red" : "Blue", 0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, ( uiInfo.redBlue == 0 ) ? "Red" : "Blue", 0, 0, textStyle, rect->scrAlign );
 }
 
 static void UI_DrawCrosshair( rectDef_t *rect, float scale, vec4_t color ) {
@@ -2292,7 +2300,7 @@ static void UI_DrawCrosshair( rectDef_t *rect, float scale, vec4_t color ) {
 	}
 
 	trap_R_SetColor( color );
-	UI_DrawHandlePic( rect->x, rect->y - rect->h, rect->w, rect->h, uiInfo.uiDC.Assets.crosshairShader[ch] );
+	UI_DrawHandlePic( rect->x, rect->y - rect->h, rect->w, rect->h, uiInfo.uiDC.Assets.crosshairShader[ch], rect->scrAlign );
 	trap_R_SetColor( NULL );
 }
 
@@ -2355,7 +2363,7 @@ static void UI_DrawSelectedPlayer( rectDef_t *rect, int font, float scale, vec4_
 		uiInfo.playerRefresh = uiInfo.uiDC.realTime + 3000;
 		UI_BuildPlayerList();
 	}
-	Text_Paint( rect->x, rect->y, font, scale, color, ( uiInfo.teamLeader ) ? UI_Cvar_VariableString( "cg_selectedPlayerName" ) : UI_Cvar_VariableString( "name" ), 0, 0, textStyle );
+	Text_Paint( rect->x, rect->y, font, scale, color, ( uiInfo.teamLeader ) ? UI_Cvar_VariableString( "cg_selectedPlayerName" ) : UI_Cvar_VariableString( "name" ), 0, 0, textStyle, rect->scrAlign );
 }
 
 static void UI_DrawServerRefreshDate( rectDef_t *rect, int font, float scale, vec4_t color, int textStyle ) {
@@ -2441,23 +2449,24 @@ static void UI_DrawKeyBindStatus( rectDef_t *rect, int font, float scale, vec4_t
 	//int ofs = 0; // TTimo: unused
 	if ( Display_KeyBindPending() ) {
 //		Text_Paint(rect->x, rect->y, font, scale, color, "Waiting for new key... Press ESCAPE to cancel", 0, 0, textStyle);
-		Text_Paint( rect->x, rect->y, font, scale, color, DC->getTranslatedString( "keywait" ), 0, 0, textStyle );
+		Text_Paint( rect->x, rect->y, font, scale, color, DC->getTranslatedString( "keywait" ), 0, 0, textStyle, rect->scrAlign );
 	} else {
 //		Text_Paint(rect->x, rect->y, font, scale, color, "Press ENTER or CLICK to change, Press BACKSPACE to clear", 0, 0, textStyle);
-		Text_Paint( rect->x, rect->y, font, scale, color, DC->getTranslatedString( "keychange" ), 0, 0, textStyle );
+		Text_Paint( rect->x, rect->y, font, scale, color, DC->getTranslatedString( "keychange" ), 0, 0, textStyle, rect->scrAlign );
 
 	}
 }
 
 static void UI_DrawGLInfo( rectDef_t *rect, int font, float scale, vec4_t color, int textStyle ) {
-	char * eptr;
-	char buff[4096];
-	const char *lines[64];
-	int y, numLines, i;
+	char		*eptr;
+	char		buff[4096];
+	const char	*lines[64];
+	int			y, numLines, i;
 
-	Text_Paint( rect->x + 2, rect->y, font, scale, color, va( "VENDOR: %s", uiInfo.uiDC.glconfig.vendor_string ), 0, 30, textStyle );
-	Text_Paint( rect->x + 2, rect->y + 15, font, scale, color, va( "VERSION: %s: %s", uiInfo.uiDC.glconfig.version_string,uiInfo.uiDC.glconfig.renderer_string ), 0, 30, textStyle );
-	Text_Paint( rect->x + 2, rect->y + 30, font, scale, color, va( "PIXELFORMAT: color(%d-bits) Z(%d-bits) stencil(%d-bits)", uiInfo.uiDC.glconfig.colorBits, uiInfo.uiDC.glconfig.depthBits, uiInfo.uiDC.glconfig.stencilBits ), 0, 30, textStyle );
+	// Knightmare- increased these from 30 to 64 chars
+	Text_Paint( rect->x + 2, rect->y, font, scale, color, va( "VENDOR: %s", uiInfo.uiDC.glconfig.vendor_string ), 0, 64, textStyle, rect->scrAlign );	
+	Text_Paint( rect->x + 2, rect->y + 15, font, scale, color, va( "VERSION: %s: %s", uiInfo.uiDC.glconfig.version_string,uiInfo.uiDC.glconfig.renderer_string ), 0, 64, textStyle, rect->scrAlign );
+	Text_Paint( rect->x + 2, rect->y + 30, font, scale, color, va( "PIXELFORMAT: color(%d-bits) Z(%d-bits) stencil(%d-bits)", uiInfo.uiDC.glconfig.colorBits, uiInfo.uiDC.glconfig.depthBits, uiInfo.uiDC.glconfig.stencilBits ), 0, 64, textStyle, rect->scrAlign );
 
 	// build null terminated extension strings
 	Q_strncpyz( buff, uiInfo.uiDC.glconfig.extensions_string, 4096 );
@@ -2476,16 +2485,19 @@ static void UI_DrawGLInfo( rectDef_t *rect, int font, float scale, vec4_t color,
 
 		while ( *eptr && *eptr != ' ' )
 			eptr++;
+
+		if (numLines >= 63)	// Knightmare: cut this off to avoid corruption
+			break;
 	}
 
 	i = 0;
 	while ( i < numLines ) {
-		Text_Paint( rect->x + 2, y, font, scale, color, lines[i++], 0, 36, textStyle );
+		Text_Paint( rect->x + 2, y, font, scale, color, lines[i++], 0, 36, textStyle, rect->scrAlign );
 		if ( i < numLines ) {
-			Text_Paint( rect->x + rect->w / 3.0f, y, font, scale, color, lines[i++], 0, 36, textStyle );
+			Text_Paint( rect->x + rect->w / 3.0f, y, font, scale, color, lines[i++], 0, 36, textStyle, rect->scrAlign );
 		}
 		if ( i < numLines ) {
-			Text_Paint( rect->x + ( 2.0f * ( rect->w / 3.0f ) ), y, font, scale, color, lines[i++], 0, 36, textStyle );
+			Text_Paint( rect->x + ( 2.0f * ( rect->w / 3.0f ) ), y, font, scale, color, lines[i++], 0, 36, textStyle, rect->scrAlign );
 		}
 		y += 10;
 		if ( y > rect->y + rect->h - 11 ) {
@@ -2531,20 +2543,21 @@ static void UI_DrawLimboChat( rectDef_t *rect, int font, float scale, vec4_t col
 		h = 1;
 
 		trap_GetLimboString( i, buf );
-		Text_Paint( x, y, font, scale, color, buf, 0, 0, textStyle );
+		Text_Paint( x, y, font, scale, color, buf, 0, 0, textStyle, ALIGN_CENTER );
 	}
 }
 // -NERVE - SMF
 
 // FIXME: table drive
 //
-static void UI_OwnerDraw( float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, int font, float scale, vec4_t color, qhandle_t shader, int textStyle ) {
+static void UI_OwnerDraw( float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, int font, float scale, vec4_t color, qhandle_t shader, int textStyle, scralign_t scralign ) {
 	rectDef_t rect;
 
 	rect.x = x + text_x;
 	rect.y = y + text_y;
 	rect.w = w;
 	rect.h = h;
+	rect.scrAlign = scralign;	// Knightmare added
 
 	switch ( ownerDraw ) {
 	case UI_HANDICAP:
@@ -6549,8 +6562,11 @@ void _UI_Init( qboolean inGameLoad ) {
 	trap_GetGlconfig( &uiInfo.uiDC.glconfig );
 
 	// for 640x480 virtualized screen
-	uiInfo.uiDC.yscale = uiInfo.uiDC.glconfig.vidHeight * ( 1.0 / 480.0 );
-	uiInfo.uiDC.xscale = uiInfo.uiDC.glconfig.vidWidth * ( 1.0 / 640.0 );
+	uiInfo.uiDC.yscale = uiInfo.uiDC.glconfig.vidHeight * ( 1.0f / 480.0f );
+	uiInfo.uiDC.xscale = uiInfo.uiDC.glconfig.vidWidth * ( 1.0f / 640.0f );
+	uiInfo.uiDC.minscale = min(uiInfo.uiDC.xscale, uiInfo.uiDC.yscale);	// Knightmare added
+	uiInfo.uiDC.screenAspect = (float)uiInfo.uiDC.glconfig.vidWidth / (float)uiInfo.uiDC.glconfig.vidHeight;	// Knightmare added
+
 	if ( uiInfo.uiDC.glconfig.vidWidth * 480 > uiInfo.uiDC.glconfig.vidHeight * 640 ) {
 		// wide screen
 		uiInfo.uiDC.bias = 0.5 * ( uiInfo.uiDC.glconfig.vidWidth - ( uiInfo.uiDC.glconfig.vidHeight * ( 640.0 / 480.0 ) ) );
@@ -6725,15 +6741,19 @@ void _UI_MouseEvent( int dx, int dy ) {
 	uiInfo.uiDC.cursorx += dx;
 	if ( uiInfo.uiDC.cursorx < 0 ) {
 		uiInfo.uiDC.cursorx = 0;
-	} else if ( uiInfo.uiDC.cursorx > SCREEN_WIDTH ) {
-		uiInfo.uiDC.cursorx = SCREEN_WIDTH;
+	}
+	// Knightmare changed, was SCREEN_WIDTH
+	else if ( uiInfo.uiDC.cursorx > uiInfo.uiDC.glconfig.vidWidth ) {	
+		uiInfo.uiDC.cursorx = uiInfo.uiDC.glconfig.vidWidth;
 	}
 
 	uiInfo.uiDC.cursory += dy;
 	if ( uiInfo.uiDC.cursory < 0 ) {
 		uiInfo.uiDC.cursory = 0;
-	} else if ( uiInfo.uiDC.cursory > SCREEN_HEIGHT ) {
-		uiInfo.uiDC.cursory = SCREEN_HEIGHT;
+	}
+	// Knightmare changed, was SCREEN_HEIGHT
+	else if ( uiInfo.uiDC.cursory > uiInfo.uiDC.glconfig.vidHeight ) {
+		uiInfo.uiDC.cursory = uiInfo.uiDC.glconfig.vidHeight;
 	}
 
 	if ( Menu_Count() > 0 ) {
@@ -6741,7 +6761,6 @@ void _UI_MouseEvent( int dx, int dy ) {
 		//Menu_HandleMouseMove(menu, uiInfo.uiDC.cursorx, uiInfo.uiDC.cursory);
 		Display_MouseMove( NULL, uiInfo.uiDC.cursorx, uiInfo.uiDC.cursory );
 	}
-
 }
 
 void UI_LoadNonIngame() {
@@ -6991,7 +7010,7 @@ static void UI_PrintTime( char *buf, int bufsize, int time ) {
 
 void Text_PaintCenter( float x, float y, int font, float scale, vec4_t color, const char *text, float adjust ) {
 	int len = Text_Width( text, font, scale, 0 );
-	Text_Paint( x - len / 2, y, font, scale, color, text, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE );
+	Text_Paint( x - len / 2, y, font, scale, color, text, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, ALIGN_CENTER );
 }
 
 
@@ -7023,7 +7042,7 @@ static void UI_DisplayDownloadInfo( const char *downloadName, float centerPoint,
 		s = downloadName;
 	}
 
-	Text_Paint( centerPoint, yStart + 244, font, 0.6f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE );
+	Text_Paint( centerPoint, yStart + 244, font, 0.6f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, ALIGN_CENTER );
 
 	UI_ReadableSize( dlSizeBuf,     sizeof dlSizeBuf,       downloadCount );
 	UI_ReadableSize( totalSizeBuf,  sizeof totalSizeBuf,    downloadSize );

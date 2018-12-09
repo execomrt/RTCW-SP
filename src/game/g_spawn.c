@@ -327,6 +327,7 @@ void SP_ai_blackguard( gentity_t *ent );
 void SP_ai_protosoldier( gentity_t *ent );
 void SP_ai_frogman( gentity_t *ent );
 void SP_ai_partisan( gentity_t *ent );
+void SP_ai_russian( gentity_t *ent );	// Knightmare added
 void SP_ai_civilian( gentity_t *ent );
 // done.
 
@@ -592,6 +593,7 @@ spawn_t spawns[] = {
 	{"ai_frogman", SP_ai_frogman},
 	{"ai_blackguard", SP_ai_blackguard},
 	{"ai_partisan", SP_ai_partisan},
+	{"ai_russian", SP_ai_russian},	// Knightmare added
 	{"ai_civilian", SP_ai_civilian},
 
 

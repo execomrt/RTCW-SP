@@ -32,7 +32,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "qcommon.h"
 #include <setjmp.h>
 
-#define MAXPRINTMSG 4096
+#define MAXPRINTMSG 8192	// Knightmare- increased from 4096
 
 #define MAX_NUM_ARGVS   50
 
@@ -145,7 +145,8 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 	static qboolean opening_qconsole = qfalse;
 
 	va_start( argptr,fmt );
-	vsprintf( msg,fmt,argptr );
+//	vsprintf( msg,fmt,argptr );
+	Q_vsnprintf( msg, sizeof(msg), fmt, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	if ( rd_buffer ) {
@@ -222,7 +223,8 @@ void QDECL Com_DPrintf( const char *fmt, ... ) {
 	}
 
 	va_start( argptr,fmt );
-	vsprintf( msg,fmt,argptr );
+//	vsprintf( msg,fmt,argptr );
+	Q_vsnprintf( msg, sizeof(msg), fmt, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	Com_Printf( "%s", msg );
@@ -282,7 +284,8 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 	com_errorEntered = qtrue;
 
 	va_start( argptr,fmt );
-	vsprintf( com_errorMessage,fmt,argptr );
+//	vsprintf( com_errorMessage,fmt,argptr );
+	Q_vsnprintf( com_errorMessage, sizeof(com_errorMessage), fmt, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	if ( code != ERR_DISCONNECT && code != ERR_NEED_CD && code != ERR_ENDGAME ) {

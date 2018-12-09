@@ -28,6 +28,10 @@ If you have questions concerning this license or the applicable additional terms
 
 // cg_drawtools.c -- helper functions called by cg_draw, cg_scoreboard, cg_info, etc
 #include "cg_local.h"
+#include "../ui/ui_shared.h"		// Knightmare added
+
+extern displayContextDef_t cgDC;	// Knightmare added
+
 
 /*
 ================
@@ -36,7 +40,15 @@ CG_AdjustFrom640
 Adjusted for resolution and screen aspect ratio
 ================
 */
-void CG_AdjustFrom640( float *x, float *y, float *w, float *h ) {
+void CG_AdjustFrom640( float *x, float *y, float *w, float *h, scralign_t align, qboolean ignoreSurround ) {
+	float	xscale, lb_xscale, yscale, minscale, vertscale;		// Knightmare added
+	float	tmp_x, tmp_y, tmp_w, tmp_h, tmp_left, tmp_right;	// Knightmare added
+	float	xleft, xright;
+
+	int scr_surroundlayout = cgDC.getCVarValue( "scr_surroundlayout" );
+	float scr_surroundleft = cgDC.getCVarValue( "scr_surroundleft" );
+	float scr_surroundright = cgDC.getCVarValue( "scr_surroundright" );
+
 #if 0
 	// adjust for wide screens
 	if ( cgs.glconfig.vidWidth * 480 > cgs.glconfig.vidHeight * 640 ) {
@@ -44,23 +56,325 @@ void CG_AdjustFrom640( float *x, float *y, float *w, float *h ) {
 	}
 #endif
 
+	// for eyefinity/surround setups, keep everything on the center monitor
+	if (scr_surroundlayout != 0 && cgs.screenAspect >= 3.6f && !ignoreSurround)
+	{
+		if (scr_surroundleft > 0.0f && scr_surroundleft < 1.0f)
+			xleft = (float)cgs.glconfig.vidWidth * scr_surroundleft;
+		else
+			xleft = (float)cgs.glconfig.vidWidth / 3.0f;
+		if (scr_surroundright > 0.0f && scr_surroundright < 1.0f)
+			xright = (float)cgs.glconfig.vidWidth * scr_surroundright;
+		else
+			xright = (float)cgs.glconfig.vidWidth * (2.0f / 3.0f);
+		xscale = (xright - xleft) / SCREEN_WIDTH;
+	}
+	else
+	{
+		xleft = 0.0f;
+		xright = (float)cgs.glconfig.vidWidth;
+		xscale = (float)cgs.glconfig.vidWidth / SCREEN_WIDTH;
+	}
+
+	lb_xscale = (float)cgs.glconfig.vidWidth / SCREEN_WIDTH;
+	yscale = (float)cgs.glconfig.vidHeight / SCREEN_HEIGHT;
+	minscale = min(xscale, yscale);
+
 	// NERVE - SMF - hack to make images display properly in small view / limbo mode
 	if ( cg.limboMenu && cg.refdef.width ) {
-		float xscale = ( ( cg.refdef.width / cgs.screenXScale ) / 640.f );
-		float yscale = ( ( cg.refdef.height / cgs.screenYScale ) / 480.f );
+		float limbo_xscale = ( ( cg.refdef.width / cgs.screenXScale ) / 640.f );
+		float limbo_yscale = ( ( cg.refdef.height / cgs.screenYScale ) / 480.f );
 
-		( *x ) = ( *x ) * xscale + ( cg.refdef.x / cgs.screenXScale );
-		( *y ) = ( *y ) * yscale + ( cg.refdef.y / cgs.screenYScale );
-		( *w ) *= xscale;
-		( *h ) *= yscale;
+		( *x ) = ( *x ) * limbo_xscale + ( cg.refdef.x / cgs.screenXScale );
+		( *y ) = ( *y ) * limbo_yscale + ( cg.refdef.y / cgs.screenYScale );
+		( *w ) *= limbo_xscale;
+		( *h ) *= limbo_yscale;
 	}
 	// -NERVE - SMF
 
+	// hack for 5:4 modes
+	if ( !(cgs.screenXScale > cgs.screenYScale) && align != ALIGN_LETTERBOX && align != ALIGN_SCOPE)
+		align = ALIGN_STRETCH;
+
 	// scale for screen sizes
-	*x *= cgs.screenXScale;
-	*y *= cgs.screenYScale;
-	*w *= cgs.screenXScale;
-	*h *= cgs.screenYScale;
+	// Knightmare- added anamorphic code
+	switch (align)
+	{
+	case ALIGN_CENTER:
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - (0.5 * SCREEN_WIDTH)) * minscale + (0.5 * cgs.glconfig.vidWidth);
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - (0.5 * SCREEN_HEIGHT)) * minscale + (0.5 * cgs.glconfig.vidHeight);
+		}
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		break;
+	case ALIGN_SCOPE:
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - (0.5 * SCREEN_WIDTH)) * yscale + (0.5 * cgs.glconfig.vidWidth);
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - (0.5 * SCREEN_HEIGHT)) * yscale + (0.5 * cgs.glconfig.vidHeight);
+		}
+		if (w) 
+			*w *= yscale;
+		if (h)
+			*h *= yscale;
+		break;
+	case ALIGN_LETTERBOX:
+		// special case: video mode (eyefinity?) is wider than object
+		if ( w != NULL && h != NULL && ((float)cgs.glconfig.vidWidth / (float)cgs.glconfig.vidHeight > *w / *h) ) {
+			tmp_h = *h;
+			vertscale = cgs.glconfig.vidHeight / tmp_h;
+			if (x != NULL && w != NULL) {
+				tmp_x = *x;
+				tmp_w = *w;
+				*x = tmp_x * lb_xscale - (0.5 * (tmp_w * vertscale - tmp_w * lb_xscale));
+			}
+			if (y)
+				*y = 0;
+			if (w) 
+				*w *= vertscale;
+			if (h)
+				*h *= vertscale;
+		}
+		else {
+			if (x)
+				*x *= xscale;
+			if (y != NULL && h != NULL) {
+				tmp_y = *y;
+				tmp_h = *h;
+				*y = tmp_y * yscale - (0.5 * (tmp_h * xscale - tmp_h * yscale));
+			}
+			if (w) 
+				*w *= xscale;
+			if (h)
+				*h *= xscale;
+		}
+		break;
+	case ALIGN_TOP:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - (0.5 * SCREEN_WIDTH)) * minscale + (0.5 * cgs.glconfig.vidWidth);
+		}
+		if (y)
+			*y *= minscale;
+		break;
+	case ALIGN_BOTTOM:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - (0.5 * SCREEN_WIDTH)) * minscale + (0.5 * cgs.glconfig.vidWidth);
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - SCREEN_HEIGHT) * minscale + cgs.glconfig.vidHeight;
+		}
+		break;
+	case ALIGN_RIGHT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - SCREEN_WIDTH) * minscale + xright;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - (0.5 * SCREEN_HEIGHT)) * minscale + (0.5 * cgs.glconfig.vidHeight);
+		}
+		break;
+	case ALIGN_LEFT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * minscale + xleft;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - (0.5 * SCREEN_HEIGHT)) * minscale + (0.5 * cgs.glconfig.vidHeight);
+		}
+		break;
+	case ALIGN_TOPRIGHT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - SCREEN_WIDTH) * minscale + xright;
+		}
+		if (y)
+			*y *= minscale;
+		break;
+	case ALIGN_TOPLEFT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * minscale + xleft;
+		}
+		if (y)
+			*y *= minscale;
+		break;
+	case ALIGN_BOTTOMRIGHT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - SCREEN_WIDTH) * minscale + xright;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - SCREEN_HEIGHT) * minscale + cgs.glconfig.vidHeight;
+		}
+		break;
+	case ALIGN_BOTTOMLEFT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * minscale + xleft;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - SCREEN_HEIGHT) * minscale + cgs.glconfig.vidHeight;
+		}
+		break;
+	case ALIGN_TOP_STRETCH:
+		if (w) 
+			*w *= xscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * xscale + xleft;
+		}
+		if (y)
+			*y *= minscale;
+		break;
+	case ALIGN_BOTTOM_STRETCH:
+		if (w) 
+			*w *= xscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * xscale + xleft;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - SCREEN_HEIGHT) * minscale + cgs.glconfig.vidHeight;
+		}
+		break;
+	case ALIGN_STRETCH_ALL:
+		if (x)
+			*x *= lb_xscale;
+		if (y) 
+			*y *= yscale;
+		if (w) 
+			*w *= lb_xscale;
+		if (h)
+			*h *= yscale;
+		break;
+	case ALIGN_STRETCH_LEFT_CENTER:
+		if (x && w) {
+			tmp_x = *x;
+			tmp_w = *w;
+			tmp_left = tmp_x * xscale + xleft;
+			tmp_right = (tmp_x + tmp_w - (0.5*SCREEN_WIDTH)) * minscale + (0.5*(cgs.glconfig.vidWidth));
+			*x = tmp_left;
+			*w = tmp_right - tmp_left;
+		}
+		if (y) 
+			*y *= minscale;
+		if (h)
+			*h *= minscale;
+		break;
+	case ALIGN_STRETCH_RIGHT_CENTER:
+		if (x && w) {
+			tmp_x = *x;
+			tmp_w = *w;
+			tmp_left = (tmp_x - (0.5*SCREEN_WIDTH)) * minscale + (0.5*(cgs.glconfig.vidWidth));
+			tmp_right = (tmp_x + tmp_w - SCREEN_WIDTH) * xscale + xright;
+			*x = tmp_left;
+			*w = tmp_right - tmp_left;
+		}
+		if (y) 
+			*y *= minscale;
+		if (h)
+			*h *= minscale;
+		break;
+	case ALIGN_STRETCH:
+	default:
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * xscale + xleft;
+		}
+		if (y) 
+			*y *= yscale;
+		if (w) 
+			*w *= xscale;
+		if (h)
+			*h *= yscale;
+		break;
+	}
+}
+
+// Knightmare added
+/*
+================
+CG_Get2DScreenWidth
+
+Gets 2D screen width for eyefinity modes
+================
+*/
+float CG_Get2DScreenWidth (void)
+{
+	int scr_surroundlayout = cgDC.getCVarValue( "scr_surroundlayout" );
+	float scr_surroundleft = cgDC.getCVarValue( "scr_surroundleft" );
+	float scr_surroundright = cgDC.getCVarValue( "scr_surroundright" );
+	float	xleft, xright, xwidth;
+
+	if (scr_surroundlayout != 0 && cgs.screenAspect >= 3.6f)
+	{
+		if (scr_surroundleft > 0.0f && scr_surroundleft < 1.0f)
+			xleft = (float)cgs.glconfig.vidWidth * scr_surroundleft;
+		else
+			xleft = (float)cgs.glconfig.vidWidth / 3.0f;
+		if (scr_surroundright > 0.0f && scr_surroundright < 1.0f)
+			xright = (float)cgs.glconfig.vidWidth * scr_surroundright;
+		else
+			xright = (float)cgs.glconfig.vidWidth * (2.0f / 3.0f);
+		xwidth = (xright - xleft);
+	}
+	else
+		xwidth = cgs.glconfig.vidWidth;
+	return xwidth;
 }
 
 /*
@@ -70,24 +384,42 @@ CG_FillRect
 Coordinates are 640*480 virtual values
 =================
 */
-void CG_FillRect( float x, float y, float width, float height, const float *color ) {
+void CG_FillRect( float x, float y, float width, float height, const float *color, scralign_t align ) {
 	trap_R_SetColor( color );
 
-	CG_AdjustFrom640( &x, &y, &width, &height );
+	CG_AdjustFrom640( &x, &y, &width, &height, align, qfalse );
 	trap_R_DrawStretchPic( x, y, width, height, 0, 0, 0, 1, cgs.media.whiteShader );
 
 	trap_R_SetColor( NULL );
 }
 
 /*
+================
+CG_FillSideRect
+
+Knightmare- ignores center screen sides in surround mode
+Coordinates are 640*480 virtual values
+=================
+*/
+void CG_FillSideRect( float x, float y, float width, float height, const float *color, scralign_t align ) {
+	trap_R_SetColor( color );
+
+	CG_AdjustFrom640( &x, &y, &width, &height, align, qtrue );
+	trap_R_DrawStretchPic( x, y, width, height, 0, 0, 0, 1, cgs.media.whiteShader );
+
+	trap_R_SetColor( NULL );
+}
+
+
+/*
 ==============
 CG_FillRectGradient
 ==============
 */
-void CG_FillRectGradient( float x, float y, float width, float height, const float *color, const float *gradcolor, int gradientType ) {
+void CG_FillRectGradient( float x, float y, float width, float height, const float *color, const float *gradcolor, int gradientType, scralign_t align ) {
 	trap_R_SetColor( color );
 
-	CG_AdjustFrom640( &x, &y, &width, &height );
+	CG_AdjustFrom640( &x, &y, &width, &height, align, qfalse );
 	trap_R_DrawStretchPicGradient( x, y, width, height, 0, 0, 0, 0, cgs.media.whiteShader, gradcolor, gradientType );
 
 	trap_R_SetColor( NULL );
@@ -127,7 +459,7 @@ flags:
 
 #define BAR_BORDERSIZE 2
 
-void CG_FilledBar( float x, float y, float w, float h, const float *startColorIn, float *endColor, const float *bgColor, float frac, int flags ) {
+void CG_FilledBar( float x, float y, float w, float h, const float *startColorIn, float *endColor, const float *bgColor, float frac, int flags, scralign_t align ) {
 	vec4_t backgroundcolor = {1, 1, 1, 0.25f}, colorAtPos;  // colorAtPos is the lerped color if necessary
 	vec4_t startColor;
 
@@ -161,7 +493,7 @@ void CG_FilledBar( float x, float y, float w, float h, const float *startColorIn
 					   y,
 					   w,
 					   h,
-					   backgroundcolor );
+					   backgroundcolor, align );
 
 		if ( flags & BAR_BGSPACING_X0Y0 ) {          // fill the whole box (no border)
 
@@ -188,10 +520,10 @@ void CG_FilledBar( float x, float y, float w, float h, const float *startColorIn
 		}
 
 		if ( flags & BAR_LERP_COLOR ) {
-			CG_FillRect( x, y, w, h * frac, colorAtPos );
+			CG_FillRect( x, y, w, h * frac, colorAtPos, align );
 		} else {
 //			CG_FillRectGradient ( x, y, w, h * frac, startColor, endColor, 0 );
-			CG_FillRect( x, y, w, h * frac, startColor );
+			CG_FillRect( x, y, w, h * frac, startColor, align );
 		}
 
 	} else {
@@ -203,10 +535,10 @@ void CG_FilledBar( float x, float y, float w, float h, const float *startColorIn
 		}
 
 		if ( flags & BAR_LERP_COLOR ) {
-			CG_FillRect( x, y, w * frac, h, colorAtPos );
+			CG_FillRect( x, y, w * frac, h, colorAtPos, align );
 		} else {
 //			CG_FillRectGradient ( x, y, w * frac, h, startColor, endColor, 0 );
-			CG_FillRect( x, y, w * frac, h, startColor );
+			CG_FillRect( x, y, w * frac, h, startColor, align );
 		}
 	}
 
@@ -218,10 +550,10 @@ void CG_FilledBar( float x, float y, float w, float h, const float *startColorIn
 CG_HorizontalPercentBar
 =================
 */
-void CG_HorizontalPercentBar( float x, float y, float width, float height, float percent ) {
+void CG_HorizontalPercentBar( float x, float y, float width, float height, float percent, scralign_t align ) {
 	vec4_t bgcolor = {0.5f, 0.5f, 0.5f, 0.3f},
 		   color = {1.0f, 1.0f, 1.0f, 0.3f};
-	CG_FilledBar( x, y, width, height, color, NULL, bgcolor, percent, BAR_BG | BAR_NOHUDALPHA );
+	CG_FilledBar( x, y, width, height, color, NULL, bgcolor, percent, BAR_BG | BAR_NOHUDALPHA, align );
 }
 
 
@@ -232,16 +564,18 @@ CG_DrawSides
 Coords are virtual 640x480
 ================
 */
-void CG_DrawSides( float x, float y, float w, float h, float size ) {
-	CG_AdjustFrom640( &x, &y, &w, &h );
-	size *= cgs.screenXScale;
+void CG_DrawSides( float x, float y, float w, float h, float size, scralign_t align ) {
+	CG_AdjustFrom640( &x, &y, &w, &h, align, qfalse );
+	CG_AdjustFrom640( NULL, NULL, &size, NULL, align, qfalse );	// Knighmare- use anamorphic scaling
+//	size *= cgs.screenXScale;
 	trap_R_DrawStretchPic( x, y, size, h, 0, 0, 0, 0, cgs.media.whiteShader );
 	trap_R_DrawStretchPic( x + w - size, y, size, h, 0, 0, 0, 0, cgs.media.whiteShader );
 }
 
-void CG_DrawTopBottom( float x, float y, float w, float h, float size ) {
-	CG_AdjustFrom640( &x, &y, &w, &h );
-	size *= cgs.screenYScale;
+void CG_DrawTopBottom( float x, float y, float w, float h, float size, scralign_t align ) {
+	CG_AdjustFrom640( &x, &y, &w, &h, align, qfalse );
+	CG_AdjustFrom640( NULL, NULL, NULL, &size, align, qfalse );	// Knighmare- use anamorphic scaling
+//	size *= cgs.screenYScale;
 	trap_R_DrawStretchPic( x, y, w, size, 0, 0, 0, 0, cgs.media.whiteShader );
 	trap_R_DrawStretchPic( x, y + h - size, w, size, 0, 0, 0, 0, cgs.media.whiteShader );
 }
@@ -253,7 +587,7 @@ UI_DrawRect
 Coordinates are 640*480 virtual values
 =================
 */
-void CG_DrawRect( float x, float y, float width, float height, float size, const float *color ) {
+void CG_DrawRect( float x, float y, float width, float height, float size, const float *color, scralign_t align ) {
 	vec4_t hudAlphaColor;
 
 	Vector4Copy( color, hudAlphaColor );
@@ -261,8 +595,8 @@ void CG_DrawRect( float x, float y, float width, float height, float size, const
 
 	trap_R_SetColor( hudAlphaColor );
 
-	CG_DrawTopBottom( x, y, width, height, size );
-	CG_DrawSides( x, y, width, height, size );
+	CG_DrawTopBottom( x, y, width, height, size, align );
+	CG_DrawSides( x, y, width, height, size, align );
 
 	trap_R_SetColor( NULL );
 }
@@ -276,12 +610,23 @@ CG_DrawPic
 Coordinates are 640*480 virtual values
 =================
 */
-void CG_DrawPic( float x, float y, float width, float height, qhandle_t hShader ) {
-	CG_AdjustFrom640( &x, &y, &width, &height );
+void CG_DrawPic( float x, float y, float width, float height, qhandle_t hShader, scralign_t align ) {
+	CG_AdjustFrom640( &x, &y, &width, &height, align, qfalse );
 	trap_R_DrawStretchPic( x, y, width, height, 0, 0, 1, 1, hShader );
 }
 
+/*
+================
+CG_DrawPicNew
 
+Knightmare- anamorphic version
+Coordinates are 640*480 virtual values
+=================
+*/
+void CG_DrawPicNew( float x, float y, float width, float height, qhandle_t hShader, scralign_t align  ) {
+	CG_AdjustFrom640( &x, &y, &width, &height, align, qfalse );
+	trap_R_DrawStretchPic( x, y, width, height, 0, 0, 1, 1, hShader );
+}
 
 /*
 ===============
@@ -290,7 +635,7 @@ CG_DrawChar
 Coordinates and size in 640*480 virtual screen size
 ===============
 */
-void CG_DrawChar( int x, int y, int width, int height, int ch ) {
+void CG_DrawChar( int x, int y, int width, int height, int ch, scralign_t align ) {
 	int row, col;
 	float frow, fcol;
 	float size;
@@ -306,7 +651,7 @@ void CG_DrawChar( int x, int y, int width, int height, int ch ) {
 	ay = y;
 	aw = width;
 	ah = height;
-	CG_AdjustFrom640( &ax, &ay, &aw, &ah );
+	CG_AdjustFrom640( &ax, &ay, &aw, &ah, align, qfalse );
 
 	row = ch >> 4;
 	col = ch & 15;
@@ -328,7 +673,7 @@ CG_DrawChar2
 Coordinates and size in 640*480 virtual screen size
 ===============
 */
-void CG_DrawChar2( int x, int y, int width, int height, int ch ) {
+void CG_DrawChar2( int x, int y, int width, int height, int ch, scralign_t align ) {
 	int row, col;
 	float frow, fcol;
 	float size;
@@ -344,7 +689,7 @@ void CG_DrawChar2( int x, int y, int width, int height, int ch ) {
 	ay = y;
 	aw = width;
 	ah = height;
-	CG_AdjustFrom640( &ax, &ay, &aw, &ah );
+	CG_AdjustFrom640( &ax, &ay, &aw, &ah, align, qfalse );
 
 	row = ch >> 4;
 	col = ch & 15;
@@ -371,7 +716,7 @@ Coordinates are at 640 by 480 virtual resolution
 ==================
 */
 void CG_DrawStringExt( int x, int y, const char *string, const float *setColor,
-					   qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars ) {
+					   qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars, scralign_t align ) {
 	vec4_t color;
 	const unsigned char *s;
 	int xx;
@@ -394,7 +739,7 @@ void CG_DrawStringExt( int x, int y, const char *string, const float *setColor,
 				s += 2;
 				continue;
 			}
-			CG_DrawChar( xx + 2, y + 2, charWidth, charHeight, *s );
+			CG_DrawChar( xx + 2, y + 2, charWidth, charHeight, *s, align );
 			cnt++;
 			xx += charWidth;
 			s++;
@@ -416,7 +761,7 @@ void CG_DrawStringExt( int x, int y, const char *string, const float *setColor,
 			s += 2;
 			continue;
 		}
-		CG_DrawChar( xx, y, charWidth, charHeight, *s );
+		CG_DrawChar( xx, y, charWidth, charHeight, *s, align );
 		xx += charWidth;
 		cnt++;
 		s++;
@@ -434,7 +779,7 @@ Coordinates are at 640 by 480 virtual resolution
 ==================
 */
 void CG_DrawStringExt2( int x, int y, const char *string, const float *setColor,
-						qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars ) {
+						qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars, scralign_t align ) {
 	vec4_t color;
 	const unsigned char *s;
 	int xx;
@@ -457,7 +802,7 @@ void CG_DrawStringExt2( int x, int y, const char *string, const float *setColor,
 				s += 2;
 				continue;
 			}
-			CG_DrawChar2( xx + 2, y + 2, charWidth, charHeight, *s );
+			CG_DrawChar2( xx + 2, y + 2, charWidth, charHeight, *s, align );
 			cnt++;
 			xx += charWidth;
 			s++;
@@ -479,7 +824,7 @@ void CG_DrawStringExt2( int x, int y, const char *string, const float *setColor,
 			s += 2;
 			continue;
 		}
-		CG_DrawChar2( xx, y, charWidth, charHeight, *s );
+		CG_DrawChar2( xx, y, charWidth, charHeight, *s, align );
 		xx += charWidth;
 		cnt++;
 		s++;
@@ -497,7 +842,7 @@ Coordinates are at 640 by 480 virtual resolution
 ==================
 */
 void CG_DrawStringExt3( int x, int y, const char *string, const float *setColor,
-						qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars ) {
+						qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars, scralign_t align ) {
 	vec4_t color;
 	const unsigned char *s;
 	int xx;
@@ -533,7 +878,7 @@ void CG_DrawStringExt3( int x, int y, const char *string, const float *setColor,
 				s += 2;
 				continue;
 			}
-			CG_DrawChar2( xx + 2, y + 2, charWidth, charHeight, *s );
+			CG_DrawChar2( xx + 2, y + 2, charWidth, charHeight, *s, align );
 			cnt++;
 			xx += charWidth;
 			s++;
@@ -555,7 +900,7 @@ void CG_DrawStringExt3( int x, int y, const char *string, const float *setColor,
 			s += 2;
 			continue;
 		}
-		CG_DrawChar2( xx, y, charWidth, charHeight, *s );
+		CG_DrawChar2( xx, y, charWidth, charHeight, *s, align );
 		xx += charWidth;
 		cnt++;
 		s++;
@@ -626,45 +971,45 @@ Coordinates are at 640 by 480 virtual resolution
 	trap_R_SetColor( NULL );
 }*/
 
-void CG_DrawBigString( int x, int y, const char *s, float alpha ) {
+void CG_DrawBigString( int x, int y, const char *s, float alpha, scralign_t align ) {
 	float color[4];
 
 	color[0] = color[1] = color[2] = 1.0;
 	color[3] = alpha;
 	//CG_DrawStringExt( x, y, s, color, qfalse, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0 );
-	CG_DrawStringExt2( x, y, s, color, qfalse, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0 );
+	CG_DrawStringExt2( x, y, s, color, qfalse, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0, align );
 }
 
-void CG_DrawBigStringColor( int x, int y, const char *s, vec4_t color ) {
+void CG_DrawBigStringColor( int x, int y, const char *s, vec4_t color, scralign_t align ) {
 	//CG_DrawStringExt( x, y, s, color, qtrue, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0 );
-	CG_DrawStringExt2( x, y, s, color, qfalse, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0 );
+	CG_DrawStringExt2( x, y, s, color, qfalse, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0, align );
 }
 // END JOSEPH
 
 // JOSEPH 4-25-00
-void CG_DrawBigString2( int x, int y, const char *s, float alpha ) {
+void CG_DrawBigString2( int x, int y, const char *s, float alpha, scralign_t align ) {
 	float color[4];
 
 	color[0] = color[1] = color[2] = 1.0;
 	color[3] = alpha;
-	CG_DrawStringExt3( x, y, s, color, qfalse, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0 );
+	CG_DrawStringExt3( x, y, s, color, qfalse, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0, align );
 }
 
-void CG_DrawBigStringColor2( int x, int y, const char *s, vec4_t color ) {
-	CG_DrawStringExt3( x, y, s, color, qfalse, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0 );
+void CG_DrawBigStringColor2( int x, int y, const char *s, vec4_t color, scralign_t align ) {
+	CG_DrawStringExt3( x, y, s, color, qfalse, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0, align );
 }
 // END JOSEPH
 
-void CG_DrawSmallString( int x, int y, const char *s, float alpha ) {
+void CG_DrawSmallString( int x, int y, const char *s, float alpha, scralign_t align ) {
 	float color[4];
 
 	color[0] = color[1] = color[2] = 1.0;
 	color[3] = alpha;
-	CG_DrawStringExt( x, y, s, color, qfalse, qfalse, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT, 0 );
+	CG_DrawStringExt( x, y, s, color, qfalse, qfalse, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT, 0, align );
 }
 
-void CG_DrawSmallStringColor( int x, int y, const char *s, vec4_t color ) {
-	CG_DrawStringExt( x, y, s, color, qtrue, qfalse, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT, 0 );
+void CG_DrawSmallStringColor( int x, int y, const char *s, vec4_t color, scralign_t align ) {
+	CG_DrawStringExt( x, y, s, color, qtrue, qfalse, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT, 0, align );
 }
 
 /*

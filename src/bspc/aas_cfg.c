@@ -235,7 +235,8 @@ char    * QDECL va( char *format, ... ) {
 	index++;
 
 	va_start( argptr, format );
-	vsprintf( buf, format,argptr );
+//	vsprintf( buf, format,argptr );
+	Q_vsnprintf( buf, sizeof(buf), format, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	return buf;

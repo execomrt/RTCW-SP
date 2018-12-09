@@ -1346,6 +1346,26 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="Resource Files"
+			>
+			<File
+				RelativePath=".\win32\background.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\win32\clear.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\win32\qe3.ico"
+				>
+			</File>
+			<File
+				RelativePath=".\win32\winquake.rc"
+				>
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>

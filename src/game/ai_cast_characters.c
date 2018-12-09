@@ -873,6 +873,54 @@ AICharacterDefaults_t aiDefaults[NUM_CHARACTERS] = {
 		AISTATE_RELAXED
 	},
 
+	//AICHAR_RUSSIAN	Knightmare added
+	{
+		"Russian",
+		{
+			220,		// running speed
+			90,			// walking speed
+			80,			// crouching speed
+			90,			// Field of View
+			300,		// Yaw Speed
+			0.0,		// leader
+			0.70,		// aim skill
+			0.70,		// aim accuracy
+			0.75,		// attack skill
+			0.5,		// reaction time
+			0.3,		// attack crouch
+			0.0,		// idle crouch
+			0.5,		// aggression
+			0.8,		// tactical
+			0.0,		// camper
+			16000,		// alertness
+			100,		// starting health
+			1.0,		// hearing scale
+			0.9,		// not in pvs hearing scale
+			512,		// relaxed detection radius
+			1.0,		// pain threshold multiplier
+		},
+		{
+		"russianSightPlayer",
+		"russianAttackPlayer",
+		"russianOrders",
+		"russianDeath",
+		"russianSilentDeath",		//----(SA)	added
+		"russianFlameDeath",	//----(SA)	added
+		"russianPain",
+		"russianStay",
+		"russianFollow",
+		"russianOrdersDeny",
+		},
+		AITEAM_ALLIES,	//----(SA)	changed affiliation for DK
+		"russian/default",
+		{WP_MP40},
+		BBOX_SMALL, {32,48},
+		AIFL_CATCH_GRENADE|AIFL_STAND_IDLE2,
+		NULL, NULL, NULL,
+		NULL,
+		AISTATE_RELAXED
+	},
+
 	//AICHAR_CIVILIAN
 	{
 		"Civilian",
@@ -1659,6 +1707,24 @@ SP_ai_partisan
 void SP_ai_partisan( gentity_t *ent ) {
 	AICast_DelayedSpawnCast( ent, AICHAR_PARTISAN );
 }
+
+// Knightmare added
+//----------------------------------------------------------------------------------------------------------------------------
+/*QUAKED ai_russian (1 0.25 0) (-16 -16 -24) (16 16 64) TriggerSpawn NoRevive
+"skin" the .skin file to use for this character (must exist in the player characters directory, otherwise 'partisan/default' is used)
+"head" the .skin file to use for his head (must exist in the pc's dir, otherwise 'default' is used)
+"ainame" name of AI
+*/
+
+/*
+============
+SP_ai_russian
+============
+*/
+void SP_ai_russian( gentity_t *ent ) {
+	AICast_DelayedSpawnCast( ent, AICHAR_RUSSIAN );
+}
+//end Knightmare
 
 //----------------------------------------------------------------------------------------------------------------------------
 /*QUAKED ai_civilian (1 0.25 0) (-16 -16 -24) (16 16 64) TriggerSpawn NoRevive

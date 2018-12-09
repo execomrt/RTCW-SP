@@ -71,7 +71,8 @@ void AAS_Error( char *fmt, ... ) {
 	char text[1024];
 
 	va_start( argptr, fmt );
-	vsprintf( text, fmt, argptr );
+//	vsprintf( text, fmt, argptr );
+	Q_vsnprintf( text, sizeof(text), fmt, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	Error( text );
@@ -164,7 +165,8 @@ void BotImport_Print( int type, char *fmt, ... ) {
 	char buf[1024];
 
 	va_start( argptr, fmt );
-	vsprintf( buf, fmt, argptr );
+//	vsprintf( buf, fmt, argptr );
+	Q_vsnprintf( buf, sizeof(buf), fmt, argptr );	// Knightmare- buffer overflow fix
 	printf( buf );
 	if ( buf[0] != '\r' ) {
 		Log_Write( buf );
@@ -216,7 +218,8 @@ void Com_DPrintf( char *fmt, ... ) {
 	char buf[1024];
 
 	va_start( argptr, fmt );
-	vsprintf( buf, fmt, argptr );
+//	vsprintf( buf, fmt, argptr );
+	Q_vsnprintf( buf, sizeof(buf), fmt, argptr );	// Knightmare- buffer overflow fix
 	printf( buf );
 	if ( buf[0] != '\r' ) {
 		Log_Write( buf );

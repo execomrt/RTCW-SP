@@ -66,6 +66,28 @@ If you have questions concerning this license or the applicable additional terms
 #define RDF_DRAWINGSKY      ( 1 << 5 )
 #define RDF_SNOOPERVIEW     ( 1 << 6 )  //----(SA)	added
 
+// Knightmare- screen item alignment types
+typedef enum
+{
+	ALIGN_UNSET = 0,
+	ALIGN_STRETCH,
+	ALIGN_STRETCH_LEFT_CENTER,
+	ALIGN_STRETCH_RIGHT_CENTER,
+	ALIGN_STRETCH_ALL,
+	ALIGN_CENTER,
+	ALIGN_LETTERBOX,
+	ALIGN_TOP,
+	ALIGN_BOTTOM,
+	ALIGN_RIGHT,
+	ALIGN_LEFT,
+	ALIGN_TOPRIGHT,
+	ALIGN_TOPLEFT,
+	ALIGN_BOTTOMRIGHT,
+	ALIGN_BOTTOMLEFT,
+	ALIGN_TOP_STRETCH,
+	ALIGN_BOTTOM_STRETCH,
+	ALIGN_SCOPE	// special case for scopes, only used by cgame module
+} scralign_t;
 
 typedef struct {
 	vec3_t xyz;
@@ -253,7 +275,9 @@ typedef enum {
 typedef enum {
 	TC_NONE,
 	TC_S3TC,
-	TC_EXT_COMP_S3TC
+	TC_EXT_COMP_S3TC,
+	TC_EXT_COMP_BPTC,
+	TC_EXT_COMP_ASTC
 } textureCompression_t;
 
 typedef enum {
@@ -280,7 +304,8 @@ typedef struct {
 	char renderer_string[MAX_STRING_CHARS];
 	char vendor_string[MAX_STRING_CHARS];
 	char version_string[MAX_STRING_CHARS];
-	char extensions_string[4 * MAX_STRING_CHARS];                       // this is actually too short for many current cards/drivers  // (SA) doubled from 2x to 4x MAX_STRING_CHARS
+//	char extensions_string[4 * MAX_STRING_CHARS];                       // this is actually too short for many current cards/drivers  // (SA) doubled from 2x to 4x MAX_STRING_CHARS
+	char extensions_string[8192];							// Knightmare- increased to 8x MAX_STRING_CHARS
 
 	int maxTextureSize;                             // queried from GL
 	int maxActiveTextures;                          // multitexture ability

@@ -666,13 +666,13 @@ CG_DrawHoldableSelect
 ==============
 */
 void CG_DrawHoldableSelect( void ) {
-	int bits;
-	int count;
-	int amount;
-	int i, x, y, w;
+	int		bits;
+	int		count;
+	int		amount;
+	int		i, x, y, w;
 	float   *color;
 	char    *name;
-	gitem_t     *item;
+	gitem_t	*item;
 
 	// don't display if dead
 	if ( cg.predictedPlayerState.stats[STAT_HEALTH] <= 0 ) {
@@ -734,19 +734,19 @@ void CG_DrawHoldableSelect( void ) {
 			if ( wine > 3 ) {
 				wine = 3;
 			}
-			CG_DrawPic( x, y, 32, 32, cg_items[item - bg_itemlist].icons[ 2 - ( wine - 1 ) ] ) ;
+			CG_DrawPic( x, y, 32, 32, cg_items[item - bg_itemlist].icons[ 2 - ( wine - 1 ) ], ALIGN_BOTTOM ) ;
 		} else {
-			CG_DrawPic( x, y, 32, 32, cg_items[item - bg_itemlist].icons[0] );
+			CG_DrawPic( x, y, 32, 32, cg_items[item - bg_itemlist].icons[0], ALIGN_BOTTOM );
 		}
 
 		// draw remaining uses if there's more than one
 		if ( amount > 1 ) {
-			CG_DrawBigStringColor( x + 6, y + 40, va( "%d", amount ), color );
+			CG_DrawBigStringColor( x + 6, y + 40, va( "%d", amount ), color, ALIGN_BOTTOM );
 		}
 
 		// draw selection marker
 		if ( i == cg.holdableSelect ) {
-			CG_DrawPic( x - 4, y - 4, 40, 40, cgs.media.selectShader );
+			CG_DrawPic( x - 4, y - 4, 40, 40, cgs.media.selectShader, ALIGN_BOTTOM );
 		}
 
 		x += 40;
@@ -763,7 +763,7 @@ void CG_DrawHoldableSelect( void ) {
 				w = CG_DrawStrlen( name ) * 10;
 				x = ( SCREEN_WIDTH - w ) / 2;
 //				CG_DrawBigStringColor(x, y - 22, name, color);
-				CG_DrawStringExt2( x, y + 74, name, color, qfalse, qtrue, 10, 10, 0 );
+				CG_DrawStringExt2( x, y + 74, name, color, qfalse, qtrue, 10, 10, 0, ALIGN_BOTTOM );
 //				CG_Text_Paint(x, y + 74, 2, 0.3f, color, name, 0, 0, 6); // ITEM_TEXTSTYLE_SHADOWEDMORE
 			}
 		}

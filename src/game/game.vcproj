@@ -1377,6 +1377,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\km_cvar.h"
+				>
+			</File>
+			<File
 				RelativePath="..\botai\match.h"
 				>
 			</File>

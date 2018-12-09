@@ -35,7 +35,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "../qcommon/qfiles.h"
 #include "../qcommon/qcommon.h"
 #include "tr_public.h"
-#include "qgl.h"
+#include "../glew/include/GL/glew.h"
 
 #define GL_INDEX_TYPE       GL_UNSIGNED_INT
 typedef unsigned int glIndex_t;
@@ -1130,6 +1130,7 @@ extern cvar_t   *r_ati_truform_pointmode;   //----(SA)
 extern cvar_t   *r_ati_truform_normalmode;  //----(SA)
 extern cvar_t   *r_ati_fsaa_samples;        //DAJ
 extern cvar_t   *r_ext_texture_filter_anisotropic;
+extern cvar_t   *r_ext_texture_filter_anisotropic_avail;	// Knightmare added
 extern cvar_t   *r_ext_NV_fog_dist;
 extern cvar_t   *r_nv_fogdist_mode;
 //----(SA)	end
@@ -1212,6 +1213,8 @@ extern cvar_t   *r_wolffog;
 // done
 
 extern cvar_t  *r_highQualityVideo;
+
+extern cvar_t  *r_screenshotFormat;	// Knightmare added
 //====================================================================
 
 float R_NoiseGet4f( float x, float y, float z, float t );
@@ -1257,6 +1260,7 @@ void    GL_Bind( image_t *image );
 void    GL_SetDefaultState( void );
 void    GL_SelectTexture( int unit );
 void    GL_TextureMode( const char *string );
+void	GL_UpdateAnisoMode( void );	// Knightmare added
 void    GL_CheckErrors( void );
 void    GL_State( unsigned long stateVector );
 void    GL_TexEnv( int env );

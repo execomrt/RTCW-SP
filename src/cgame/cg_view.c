@@ -204,7 +204,7 @@ static void CG_CalcVrect( void ) {
 		h = LIMBO_3D_H;
 
 		cg.refdef.width = 0;
-		CG_AdjustFrom640( &x, &y, &w, &h );
+		CG_AdjustFrom640( &x, &y, &w, &h, ALIGN_CENTER, qfalse );
 
 		cg.refdef.x = x;
 		cg.refdef.y = y;
@@ -719,7 +719,7 @@ float zoomTable[ZOOM_MAX_ZOOMS][2] = {
 	{36, 8},    //	binoc
 	{20, 4},    //	sniper
 	{60, 20},   //	snooper
-	{55, 55},   //	fg42
+	{40, 30},	//	fg42 //Knightmare- was 55, 55
 	{55, 55}    //	mg42
 };
 
@@ -801,6 +801,7 @@ Fixed fov at intermissions, otherwise account for fov variable and zooms.
 */
 #define WAVE_AMPLITUDE  1
 #define WAVE_FREQUENCY  0.4
+#define STANDARD_ASPECT_RATIO ((float)640/(float)480)	// Knightmare added
 
 static int CG_CalcFov( void ) {
 	static float lastfov = 90;      // for transitions back from zoomed in modes
@@ -894,6 +895,16 @@ static int CG_CalcFov( void ) {
 	if ( cg.snap->ps.persistant[PERS_HWEAPON_USE] ) {
 		fov_x = 55;
 	}
+
+	// Knightmare- adjust fov_x for wide screen aspect
+	if (cg_widescreen_fov.value)
+	{
+		float aspectRatio = (float)cg.refdef.width/(float)cg.refdef.height;
+		if (aspectRatio > STANDARD_ASPECT_RATIO)
+			fov_x = RAD2DEG( 2 * atan( (aspectRatio / STANDARD_ASPECT_RATIO) * tan(DEG2RAD(fov_x) * 0.5) ) );
+		fov_x = min(fov_x, 160);
+	}
+	// end Knightmare
 
 	x = cg.refdef.width / tan( fov_x / 360 * M_PI );
 	fov_y = atan2( cg.refdef.height, x );
@@ -1078,6 +1089,16 @@ static int CG_CalcViewValues( void ) {
 			angles[PITCH] = -angles[PITCH];     // (SA) compensate for reversed pitch (this makes the game match the editor, however I'm guessing the real fix is to be done there)
 			VectorCopy( angles, cg.refdefViewAngles );
 			AnglesToAxis( cg.refdefViewAngles, cg.refdef.viewaxis );
+
+			// Knightmare- adjust fov_x for wide screen aspect
+			if (cg_widescreen_fov.value)
+			{
+				float aspectRatio = (float)cg.refdef.width/(float)cg.refdef.height;
+				if (aspectRatio > STANDARD_ASPECT_RATIO)
+					fov = RAD2DEG( 2 * atan( (aspectRatio / STANDARD_ASPECT_RATIO) * tan(DEG2RAD(fov) * 0.5) ) );
+				fov = min(fov, 160);
+			}
+			// end Knightmare
 
 			x = cg.refdef.width / tan( fov / 360 * M_PI );
 			cg.refdef.fov_y = atan2( cg.refdef.height, x );
@@ -1398,6 +1419,16 @@ void CG_DrawSkyBoxPortal( void ) {
 		if ( cg.snap->ps.persistant[PERS_HWEAPON_USE] ) {
 			fov_x = 55;
 		}
+
+		// Knightmare- adjust fov_x for wide screen aspect
+		if (cg_widescreen_fov.value)
+		{
+			float aspectRatio = (float)cg.refdef.width/(float)cg.refdef.height;
+			if (aspectRatio > STANDARD_ASPECT_RATIO)
+				fov_x = RAD2DEG( 2 * atan( (aspectRatio / STANDARD_ASPECT_RATIO) * tan(DEG2RAD(fov_x) * 0.5) ) );
+			fov_x = min(fov_x, 160);
+		}
+		// end Knightmare
 
 		x = cg.refdef.width / tan( fov_x / 360 * M_PI );
 		fov_y = atan2( cg.refdef.height, x );

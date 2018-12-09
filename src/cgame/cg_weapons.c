@@ -2624,9 +2624,29 @@ void CG_AddPlayerWeapon( refEntity_t *parent, playerState_t *ps, centity_t *cent
 		}
 	}
 
-
 	// Ridah
 	firing = ( ( cent->currentState.eFlags & EF_FIRING ) != 0 );
+
+	// Knightmare- prevent firing flamethrower and tesla in noclip more or when leaning or when underwater
+	if ( ps && firing && (weaponNum == WP_TESLA || weaponNum == WP_FLAMETHROWER) )
+	{
+		vec3_t point;
+		int cont = 0;
+		VectorCopy (ps->origin, point);	// crashes here
+		point[2] += ps->viewheight;
+		cont = trap_CM_PointContents( point, 0 );
+	
+		// player is in noclip mode - no fire
+		if ( ps->pm_type == PM_NOCLIP )
+			firing = qfalse;
+		// player is leaning - no fire
+		if ( ps->leanf != 0 )
+			firing = qfalse;
+		// player is underwater - no fire
+		if ( cont & CONTENTS_WATER )
+			firing = qfalse;
+	}
+	// end Knightmare
 
 	CG_PositionEntityOnTag( &gun, parent, "tag_weapon", 0, NULL );
 
@@ -2903,7 +2923,6 @@ void CG_AddPlayerWeapon( refEntity_t *parent, playerState_t *ps, centity_t *cent
 	//}
 
 	if ( ps || cg.renderingThirdPerson || !isPlayer ) {
-
 		if ( firing ) {
 			// Ridah, Flamethrower effect
 			CG_FlamethrowerFlame( cent, flash.origin );
@@ -3249,26 +3268,26 @@ void CG_DrawWeaponSelect( void ) {
 			if ( wideweap ) {
 				// weapon icon
 				if ( realweap == curweap ) {
-					CG_DrawPic( x, y, WP_ICON_X_WIDE, WP_ICON_Y, cg_weapons[drawweap].weaponIcon[1] );
+					CG_DrawPic( x, y, WP_ICON_X_WIDE, WP_ICON_Y, cg_weapons[drawweap].weaponIcon[1], ALIGN_TOPRIGHT );
 				} else {
-					CG_DrawPic( x, y, WP_ICON_X_WIDE, WP_ICON_Y, cg_weapons[drawweap].weaponIcon[0] );
+					CG_DrawPic( x, y, WP_ICON_X_WIDE, WP_ICON_Y, cg_weapons[drawweap].weaponIcon[0], ALIGN_TOPRIGHT );
 				}
 
 				// no ammo cross
 				if ( !CG_WeaponHasAmmo( realweap ) ) {   // DHM - Nerve
-					CG_DrawPic( x, y, WP_ICON_X_WIDE, WP_ICON_Y, cgs.media.noammoShader );
+					CG_DrawPic( x, y, WP_ICON_X_WIDE, WP_ICON_Y, cgs.media.noammoShader, ALIGN_TOPRIGHT );
 				}
 			} else {
 				// weapon icon
 				if ( realweap == curweap ) {
-					CG_DrawPic( x, y, WP_ICON_X, WP_ICON_Y, cg_weapons[drawweap].weaponIcon[1] );
+					CG_DrawPic( x, y, WP_ICON_X, WP_ICON_Y, cg_weapons[drawweap].weaponIcon[1], ALIGN_TOPRIGHT );
 				} else {
-					CG_DrawPic( x, y, WP_ICON_X, WP_ICON_Y, cg_weapons[drawweap].weaponIcon[0] );
+					CG_DrawPic( x, y, WP_ICON_X, WP_ICON_Y, cg_weapons[drawweap].weaponIcon[0], ALIGN_TOPRIGHT );
 				}
 
 				// no ammo cross
 				if ( !CG_WeaponHasAmmo( realweap ) ) {   // DHM - Nerve
-					CG_DrawPic( x, y, WP_ICON_X, WP_ICON_Y, cgs.media.noammoShader );
+					CG_DrawPic( x, y, WP_ICON_X, WP_ICON_Y, cgs.media.noammoShader, ALIGN_TOPRIGHT );
 				}
 			}
 
@@ -3330,14 +3349,14 @@ void CG_DrawWeaponSelect( void ) {
 
 			// weapon icon
 			if ( realweap == cg.weaponSelect ) {
-				CG_DrawPic( x, y, WP_ICON_SEC_X, WP_ICON_SEC_Y, cg_weapons[drawweap].weaponIcon[1] );
+				CG_DrawPic( x, y, WP_ICON_SEC_X, WP_ICON_SEC_Y, cg_weapons[drawweap].weaponIcon[1], ALIGN_TOPRIGHT );
 			} else {
-				CG_DrawPic( x, y, WP_ICON_SEC_X, WP_ICON_SEC_Y, cg_weapons[drawweap].weaponIcon[0] );
+				CG_DrawPic( x, y, WP_ICON_SEC_X, WP_ICON_SEC_Y, cg_weapons[drawweap].weaponIcon[0], ALIGN_TOPRIGHT );
 			}
 
 			// no ammo cross
 			if ( !CG_WeaponHasAmmo( realweap ) ) {
-				CG_DrawPic( x, y, WP_ICON_SEC_X, WP_ICON_SEC_Y, cgs.media.noammoShader );
+				CG_DrawPic( x, y, WP_ICON_SEC_X, WP_ICON_SEC_Y, cgs.media.noammoShader, ALIGN_TOPRIGHT );
 			}
 		}
 

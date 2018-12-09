@@ -102,6 +102,7 @@ cvar_t  *r_ext_texture_env_add;
 
 //----(SA)	added
 cvar_t  *r_ext_texture_filter_anisotropic;
+cvar_t  *r_ext_texture_filter_anisotropic_avail;	// Knightmare added
 
 cvar_t  *r_ext_NV_fog_dist;
 cvar_t  *r_nv_fogdist_mode;
@@ -125,7 +126,7 @@ cvar_t  *r_primitives;
 cvar_t  *r_texturebits;
 
 cvar_t  *r_drawBuffer;
-cvar_t  *r_glDriver;
+
 cvar_t  *r_glIgnoreWicked3D;
 cvar_t  *r_lightmap;
 cvar_t  *r_vertexLight;
@@ -202,25 +203,18 @@ cvar_t  *r_wolffog;
 cvar_t  *r_highQualityVideo;
 cvar_t  *r_rmse;
 
+cvar_t  *r_screenshotFormat;	// Knightmare added
+
 cvar_t  *r_maxpolys;
 int max_polys;
 cvar_t  *r_maxpolyverts;
 int max_polyverts;
 
-void ( APIENTRY * qglMultiTexCoord2fARB )( GLenum texture, GLfloat s, GLfloat t );
-void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
-void ( APIENTRY * qglClientActiveTextureARB )( GLenum texture );
 
-void ( APIENTRY * qglLockArraysEXT )( GLint, GLint );
-void ( APIENTRY * qglUnlockArraysEXT )( void );
-
-//----(SA)	added
-void ( APIENTRY * qglPNTrianglesiATI )( GLenum pname, GLint param );
-void ( APIENTRY * qglPNTrianglesfATI )( GLenum pname, GLfloat param );
 /*
 The tessellation level and normal generation mode are specified with:
 
-	void qglPNTriangles{if}ATI(enum pname, T param)
+	void glPNTriangles{if}ATI(enum pname, T param)
 
 	If <pname> is:
 		GL_PN_TRIANGLES_NORMAL_MODE_ATI -
@@ -305,7 +299,7 @@ static void InitOpenGL( void ) {
 		Q_strlwr( renderer_buffer );
 
 		// OpenGL driver constants
-		qglGetIntegerv( GL_MAX_TEXTURE_SIZE, &temp );
+		glGetIntegerv( GL_MAX_TEXTURE_SIZE, &temp );
 		glConfig.maxTextureSize = temp;
 
 		// stubbed or broken drivers may have reported 0...
@@ -333,7 +327,7 @@ void GL_CheckErrors( void ) {
 	int err;
 	char s[64];
 
-	err = qglGetError();
+	err = glGetError();
 	if ( err == GL_NO_ERROR ) {
 		return;
 	}
@@ -380,23 +374,47 @@ typedef struct vidmode_s
 
 vidmode_t r_vidModes[] =
 {
-	{ "Mode  0: 320x240",        320,    240,    1 },
-	{ "Mode  1: 400x300",        400,    300,    1 },
-	{ "Mode  2: 512x384",        512,    384,    1 },
-	{ "Mode  3: 640x480",        640,    480,    1 },
-	{ "Mode  4: 800x600",        800,    600,    1 },
-	{ "Mode  5: 960x720",        960,    720,    1 },
-	{ "Mode  6: 1024x768",       1024,   768,    1 },
-	{ "Mode  7: 1152x864",       1152,   864,    1 },
-	{ "Mode  8: 1280x1024",      1280,   1024,   1 },
-	{ "Mode  9: 1600x1200",      1600,   1200,   1 },
-	{ "Mode 10: 2048x1536",      2048,   1536,   1 },
-	{ "Mode 11: 856x480 (wide)",856, 480,    1 },
-	{ "Mode 12: 1920x1200 (wide)",1920,  1200,   1 }     //----(SA)	added
+	{ "Mode  0: 320x240",         320,    240,    1 },
+	{ "Mode  1: 400x300",         400,    300,    1 },
+	{ "Mode  2: 512x384",         512,    384,    1 },
+	{ "Mode  3: 640x480",         640,    480,    1 },
+	{ "Mode  4: 800x600",         800,    600,    1 },
+	{ "Mode  5: 960x720",         960,    720,    1 },
+	{ "Mode  6: 1024x768",        1024,   768,    1 },
+	{ "Mode  7: 1152x864",        1152,   864,    1 },
+	{ "Mode  8: 1280x960",        1280,   960,    1 },    // Knightmare	added
+	{ "Mode  9: 1280x1024",       1280,   1024,   1 },
+	{ "Mode 10: 1400x1050",       1400,   1050,   1 },    // Knightmare	added
+	{ "Mode 11: 1600x1200",       1600,   1200,   1 },
+	{ "Mode 12: 1920x1440",	      1920,   1440,   1 },    // Knightmare	added
+	{ "Mode 13: 2048x1536",       2048,   1536,   1 },
+	{ "Mode 14: 800x480 (wide)",  800,    480,	  1 },    // Knightmare	added
+	{ "Mode 15: 856x480 (wide)",  856,    480,    1 },
+	{ "Mode 16: 1024x600 (wide)", 1024,   600,    1 },    // Knightmare	added
+	{ "Mode 17: 1280x720 (wide)", 1280,   720,    1 },    // Knightmare	added
+	{ "Mode 18: 1280x768 (wide)", 1280,   768,    1 },    // Knightmare	added
+	{ "Mode 19: 1280x800 (wide)", 1280,   800,    1 },    // Knightmare	added
+	{ "Mode 20: 1360x768 (wide)", 1360,   768,	  1 },    // Knightmare	added
+	{ "Mode 21: 1366x768 (wide)", 1366,   768,	  1 },    // Knightmare	added
+	{ "Mode 22: 1440x900 (wide)", 1440,   900,	  1 },    // Knightmare	added
+	{ "Mode 23: 1600x900 (wide)", 1600,   900,    1 },    // Knightmare	added
+	{ "Mode 24: 1600x1024 (wide)", 1600,  1024,   1 },    // Knightmare	added
+	{ "Mode 25: 1680x1050 (wide)", 1680,  1050,   1 },    // Knightmare	added
+	{ "Mode 26: 1920x1080 (wide)", 1920,  1080,   1 },    // Knightmare	added
+	{ "Mode 27: 1920x1200 (wide)", 1920,  1200,   1 },    //----(SA)	added
+	{ "Mode 28: 2560x1080 (ultra-wide)", 2560,  1080,   1 },    // Knightmare	added
+	{ "Mode 29: 2560x1440 (wide)", 2560,  1440,   1 },    // Knightmare	added
+	{ "Mode 30: 2560x1600 (wide)", 2560,  1600,   1 },    // Knightmare	added
+	{ "Mode 31: 3200x1800 (wide)", 3200,  1800,   1 },    // Knightmare	added
+	{ "Mode 32: 3440x1440 (ultra-wide)", 3440,  1440,   1 },    // Knightmare	added
+	{ "Mode 33: 3840x2160 (wide)", 3840,  2160,   1 },    // Knightmare	added
+	{ "Mode 34: 3840x2400 (wide)", 3840,  2400,   1 },    // Knightmare added
+	{ "Mode 35: 5120x2880 (wide)", 5120,  2880,   1 }     // Knightmare	added
 };
 static int s_numVidModes = ( sizeof( r_vidModes ) / sizeof( r_vidModes[0] ) );
 
-qboolean R_GetModeInfo( int *width, int *height, float *windowAspect, int mode ) {
+qboolean R_GetModeInfo( int *width, int *height, float *windowAspect, int mode )
+{
 	vidmode_t   *vm;
 
 	if ( mode < -1 ) {
@@ -406,7 +424,15 @@ qboolean R_GetModeInfo( int *width, int *height, float *windowAspect, int mode )
 		return qfalse;
 	}
 
-	if ( mode == -1 ) {
+	if ( mode == -1 )
+	{
+		// Knightmare- disallow custom modes below 640x480
+		if (r_customwidth->integer < 640 || r_customheight->integer < 480)
+		{
+			ri.Cvar_Set("r_customwidth", "640");
+			ri.Cvar_Set("r_customheight", "480");
+		}
+
 		*width = r_customwidth->integer;
 		*height = r_customheight->integer;
 		*windowAspect = r_customaspect->value;
@@ -447,24 +473,33 @@ static void R_ModeList_f( void ) {
 
 /*
 ==================
-R_TakeScreenshot
+R_TakeScreenshotTGA
 ==================
 */
-void R_TakeScreenshot( int x, int y, int width, int height, char *fileName ) {
-	byte        *buffer;
-	int i, c, temp;
+void R_TakeScreenshotTGA( int x, int y, int width, int height, char *fileName ) {
+	byte	*buffer;
+	int		i, c, temp;
+	int		grab_width, grab_x;	// Knightmare added
 
-	buffer = ri.Hunk_AllocateTempMemory( glConfig.vidWidth * glConfig.vidHeight * 3 + 18 );
+	// Knightmare- because this captures in RGB, round down width to nearest multiple of 4 to fix 1366x768 shots
+	grab_width = width & ~3;
+	grab_x = (width - grab_width) / 2;
+
+//	buffer = ri.Hunk_AllocateTempMemory( glConfig.vidWidth * glConfig.vidHeight * 3 + 18 );
+	buffer = ri.Hunk_AllocateTempMemory( grab_width * height * 3 + 18 );
 
 	memset( buffer, 0, 18 );
 	buffer[2] = 2;      // uncompressed type
-	buffer[12] = width & 255;
-	buffer[13] = width >> 8;
+//	buffer[12] = width & 255;
+//	buffer[13] = width >> 8;
+	buffer[12] = grab_width & 255;
+	buffer[13] = grab_width >> 8;
 	buffer[14] = height & 255;
 	buffer[15] = height >> 8;
 	buffer[16] = 24;    // pixel size
 
-	qglReadPixels( x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer + 18 );
+//	glReadPixels( x, y, grab_width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer + 18 );
+	glReadPixels( grab_x, y, grab_width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer + 18 );
 
 	// swap rgb to bgr
 	c = 18 + width * height * 3;
@@ -494,7 +529,7 @@ void R_TakeScreenshotJPEG( int x, int y, int width, int height, char *fileName )
 
 	buffer = ri.Hunk_AllocateTempMemory( glConfig.vidWidth * glConfig.vidHeight * 4 );
 
-	qglReadPixels( x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer );
+	glReadPixels( x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer );
 
 	// gamma correct
 	if ( ( tr.overbrightBits > 0 ) && glConfig.deviceSupportsGamma ) {
@@ -586,7 +621,7 @@ void R_LevelShot( void ) {
 	buffer[14] = 128;
 	buffer[16] = 24;    // pixel size
 
-	qglReadPixels( 0, 0, glConfig.vidWidth, glConfig.vidHeight, GL_RGB, GL_UNSIGNED_BYTE, source );
+	glReadPixels( 0, 0, glConfig.vidWidth, glConfig.vidHeight, GL_RGB, GL_UNSIGNED_BYTE, source );
 
 	// resample from source
 	xScale = glConfig.vidWidth / 512.0f;
@@ -634,7 +669,7 @@ screenshot [filename]
 Doesn't print the pacifier message if there is a second arg
 ==================
 */
-void R_ScreenShot_f( void ) {
+void R_ScreenShotTGA_f( void ) {
 	char checkname[MAX_OSPATH];
 	int len;
 	static int lastNumber = -1;
@@ -682,12 +717,13 @@ void R_ScreenShot_f( void ) {
 	}
 
 
-	R_TakeScreenshot( 0, 0, glConfig.vidWidth, glConfig.vidHeight, checkname );
+	R_TakeScreenshotTGA( 0, 0, glConfig.vidWidth, glConfig.vidHeight, checkname );
 
 	if ( !silent ) {
 		ri.Printf( PRINT_ALL, "Wrote %s\n", checkname );
 	}
 }
+
 
 void R_ScreenShotJPEG_f( void ) {
 	char checkname[MAX_OSPATH];
@@ -744,57 +780,71 @@ void R_ScreenShotJPEG_f( void ) {
 	}
 }
 
+
+void R_ScreenShot_f( void ) {
+
+	if ( !strcmp( ri.Cmd_Argv( 1 ), "levelshot" ) ) {
+		R_LevelShot();
+		return;
+	}
+
+	if ( r_screenshotFormat && !Q_strcasecmp(r_screenshotFormat->string, "jpg") )
+		R_ScreenShotJPEG_f();
+	else
+		R_ScreenShotTGA_f();
+}
+
 //============================================================================
 
 /*
 ** GL_SetDefaultState
 */
 void GL_SetDefaultState( void ) {
-	qglClearDepth( 1.0f );
+	glClearDepth( 1.0f );
 
-	qglCullFace( GL_FRONT );
+	glCullFace( GL_FRONT );
 
-	qglColor4f( 1,1,1,1 );
+	glColor4f( 1,1,1,1 );
 
 	// initialize downstream texture unit if we're running
 	// in a multitexture environment
-	if ( qglActiveTextureARB ) {
+	if ( glActiveTextureARB ) {
 		GL_SelectTexture( 1 );
 		GL_TextureMode( r_textureMode->string );
 		GL_TexEnv( GL_MODULATE );
-		qglDisable( GL_TEXTURE_2D );
+		glDisable( GL_TEXTURE_2D );
 		GL_SelectTexture( 0 );
 	}
 
-	qglEnable( GL_TEXTURE_2D );
+	glEnable( GL_TEXTURE_2D );
 	GL_TextureMode( r_textureMode->string );
 	GL_TexEnv( GL_MODULATE );
 
-	qglShadeModel( GL_SMOOTH );
-	qglDepthFunc( GL_LEQUAL );
+	glShadeModel( GL_SMOOTH );
+	glDepthFunc( GL_LEQUAL );
 
 	// the vertex array is always enabled, but the color and texture
 	// arrays are enabled and disabled around the compiled vertex array call
-	qglEnableClientState( GL_VERTEX_ARRAY );
+	glEnableClientState( GL_VERTEX_ARRAY );
 
 	//
 	// make sure our GL state vector is set correctly
 	//
 	glState.glStateBits = GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_TRUE;
 
-	qglPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-	qglDepthMask( GL_TRUE );
-	qglDisable( GL_DEPTH_TEST );
-	qglEnable( GL_SCISSOR_TEST );
-	qglDisable( GL_CULL_FACE );
-	qglDisable( GL_BLEND );
+	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+	glDepthMask( GL_TRUE );
+	glDisable( GL_DEPTH_TEST );
+	glEnable( GL_SCISSOR_TEST );
+	glDisable( GL_CULL_FACE );
+	glDisable( GL_BLEND );
 
 //----(SA)	added.
 	// ATI pn_triangles
-	if ( qglPNTrianglesiATI ) {
+	if ( glPNTrianglesiATI ) {
 		int maxtess;
 		// get max supported tesselation
-		qglGetIntegerv( GL_MAX_PN_TRIANGLES_TESSELATION_LEVEL_ATI, (GLint*)&maxtess );
+		glGetIntegerv( GL_MAX_PN_TRIANGLES_TESSELATION_LEVEL_ATI, (GLint*)&maxtess );
 #ifdef __MACOS__
 		glConfig.ATIMaxTruformTess = 7;
 #else
@@ -806,17 +856,19 @@ void GL_SetDefaultState( void ) {
 		}
 
 		// set Wolf defaults
-		qglPNTrianglesiATI( GL_PN_TRIANGLES_TESSELATION_LEVEL_ATI, r_ati_truform_tess->value );
+		glPNTrianglesiATI( GL_PN_TRIANGLES_TESSELATION_LEVEL_ATI, r_ati_truform_tess->value );
 	}
 
 	if ( glConfig.anisotropicAvailable ) {
 		float maxAnisotropy;
 
-		qglGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy );
+		glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy );
 		glConfig.maxAnisotropy = maxAnisotropy;
+	//	ri.Cvar_Set( "r_ext_texture_filter_anisotropic_avail", va( "%4.1f", maxAnisotropy ) );	// Knightmare- make this accessible to menus
+		ri.Cvar_Set( "r_ext_texture_filter_anisotropic_avail", va( "%i", (int)maxAnisotropy ) );	// Knightmare- make this accessible to menus
 
 		// set when rendering
-//	   qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, glConfig.maxAnisotropy);
+	 //  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, glConfig.maxAnisotropy);
 	}
 
 //----(SA)	end
@@ -844,7 +896,28 @@ void GfxInfo_f( void ) {
 	ri.Printf( PRINT_ALL, "\nGL_VENDOR: %s\n", glConfig.vendor_string );
 	ri.Printf( PRINT_ALL, "GL_RENDERER: %s\n", glConfig.renderer_string );
 	ri.Printf( PRINT_ALL, "GL_VERSION: %s\n", glConfig.version_string );
-	ri.Printf( PRINT_ALL, "GL_EXTENSIONS: %s\n", glConfig.extensions_string );
+	// Knightmare- print extensions 2 to a line
+//	ri.Printf( PRINT_ALL, "GL_EXTENSIONS: %s\n", glConfig.extensions_string );
+	{
+		char		*extString, *extTok;
+		unsigned	line = 0;
+		ri.Printf( PRINT_ALL, "GL_EXTENSIONS: " );
+		extString = (char *)glConfig.extensions_string;
+		while (1)
+		{
+			extTok = COM_Parse(&extString);
+			if (!extTok[0])
+				break;
+			line++;
+			if ((line % 2) == 0)
+				ri.Printf ( PRINT_ALL, "%s\n", extTok );
+			else
+				ri.Printf ( PRINT_ALL, "%s ", extTok );
+		}
+		if ((line % 2) != 0)
+			ri.Printf ( PRINT_ALL, "\n" );
+	}
+	// end Knightmare
 	ri.Printf( PRINT_ALL, "GL_MAX_TEXTURE_SIZE: %d\n", glConfig.maxTextureSize );
 	ri.Printf( PRINT_ALL, "GL_MAX_ACTIVE_TEXTURES_ARB: %d\n", glConfig.maxActiveTextures );
 	ri.Printf( PRINT_ALL, "\nPIXELFORMAT: color(%d-bits) Z(%d-bit) stencil(%d-bits)\n", glConfig.colorBits, glConfig.depthBits, glConfig.stencilBits );
@@ -871,7 +944,7 @@ void GfxInfo_f( void ) {
 		ri.Printf( PRINT_ALL, "rendering primitives: " );
 		primitives = r_primitives->integer;
 		if ( primitives == 0 ) {
-			if ( qglLockArraysEXT ) {
+			if ( glLockArraysEXT ) {
 				primitives = 2;
 			} else {
 				primitives = 1;
@@ -892,13 +965,13 @@ void GfxInfo_f( void ) {
 	ri.Printf( PRINT_ALL, "picmip: %d\n", r_picmip->integer );
 	ri.Printf( PRINT_ALL, "picmip2: %d\n", r_picmip2->integer );
 	ri.Printf( PRINT_ALL, "texture bits: %d\n", r_texturebits->integer );
-	ri.Printf( PRINT_ALL, "multitexture: %s\n", enablestrings[qglActiveTextureARB != 0] );
-	ri.Printf( PRINT_ALL, "compiled vertex arrays: %s\n", enablestrings[qglLockArraysEXT != 0 ] );
+	ri.Printf( PRINT_ALL, "multitexture: %s\n", enablestrings[glActiveTextureARB != 0] );
+	ri.Printf( PRINT_ALL, "compiled vertex arrays: %s\n", enablestrings[glLockArraysEXT != 0 ] );
 	ri.Printf( PRINT_ALL, "texenv add: %s\n", enablestrings[glConfig.textureEnvAddAvailable != 0] );
 	ri.Printf( PRINT_ALL, "compressed textures: %s\n", enablestrings[glConfig.textureCompression != TC_NONE] );
 
-	ri.Printf( PRINT_ALL, "ATI truform: %s\n", enablestrings[qglPNTrianglesiATI != 0] );
-	if ( qglPNTrianglesiATI ) {
+	ri.Printf( PRINT_ALL, "ATI truform: %s\n", enablestrings[glPNTrianglesiATI != 0] );
+	if ( glPNTrianglesiATI ) {
 //DAJ bogus at this point		ri.Printf( PRINT_ALL, "MAX_PN_TRIANGLES_TESSELATION_LEVEL_ATI: %d\n", glConfig.ATIMaxTruformTess );
 		ri.Printf( PRINT_ALL, "Truform Tess: %d\n", r_ati_truform_tess->integer );
 		ri.Printf( PRINT_ALL, "Truform Point Mode: %s\n", r_ati_truform_pointmode->string );
@@ -939,7 +1012,7 @@ void R_Register( void ) {
 	//
 	// latched and archived variables
 	//
-	r_glDriver = ri.Cvar_Get( "r_glDriver", OPENGL_DRIVER_NAME, CVAR_ARCHIVE | CVAR_LATCH );
+	glewInit();
 	r_allowExtensions = ri.Cvar_Get( "r_allowExtensions", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_ext_compressed_textures = ri.Cvar_Get( "r_ext_compressed_textures", "1", CVAR_ARCHIVE | CVAR_LATCH );   // (SA) ew, a spelling change I missed from the missionpack
 	r_ext_gamma_control = ri.Cvar_Get( "r_ext_gamma_control", "1", CVAR_ARCHIVE | CVAR_LATCH );
@@ -956,7 +1029,8 @@ void R_Register( void ) {
 
 	r_ati_fsaa_samples              = ri.Cvar_Get( "r_ati_fsaa_samples", "1", CVAR_ARCHIVE );       //DAJ valids are 1, 2, 4
 
-	r_ext_texture_filter_anisotropic    = ri.Cvar_Get( "r_ext_texture_filter_anisotropic", "0", CVAR_ARCHIVE );
+	r_ext_texture_filter_anisotropic    = ri.Cvar_Get( "r_ext_texture_filter_anisotropic", "1.0", CVAR_ARCHIVE );	// Knightmare changed, was 0
+	r_ext_texture_filter_anisotropic_avail = ri.Cvar_Get( "r_ext_texture_filter_anisotropic_avail", "0", CVAR_ROM );	// Knightmare added
 
 	r_ext_NV_fog_dist                   = ri.Cvar_Get( "r_ext_NV_fog_dist", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_nv_fogdist_mode                   = ri.Cvar_Get( "r_nv_fogdist_mode", "GL_EYE_RADIAL_NV", CVAR_ARCHIVE );    // default to 'looking good'
@@ -968,8 +1042,8 @@ void R_Register( void ) {
 	r_ext_texture_env_add = ri.Cvar_Get( "r_ext_texture_env_add", "1", CVAR_ARCHIVE | CVAR_LATCH );
 #endif
 
-	r_picmip = ri.Cvar_Get( "r_picmip", "1", CVAR_ARCHIVE | CVAR_LATCH );
-	r_picmip2 = ri.Cvar_Get( "r_picmip2", "2", CVAR_ARCHIVE | CVAR_LATCH );   // used for character skins picmipping at a different level from the rest of the game
+	r_picmip = ri.Cvar_Get( "r_picmip", "0", CVAR_ARCHIVE | CVAR_LATCH );	// Knightmare changed, was 1
+	r_picmip2 = ri.Cvar_Get( "r_picmip2", "1", CVAR_ARCHIVE | CVAR_LATCH );	// Knightmare changed, was 2 // used for character skins picmipping at a different level from the rest of the game
 	r_roundImagesDown = ri.Cvar_Get( "r_roundImagesDown", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_lowMemTextureSize = ri.Cvar_Get( "r_lowMemTextureSize", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_lowMemTextureThreshold = ri.Cvar_Get( "r_lowMemTextureThreshold", "15.0", CVAR_ARCHIVE | CVAR_LATCH );
@@ -995,8 +1069,8 @@ void R_Register( void ) {
 	r_stencilbits = ri.Cvar_Get( "r_stencilbits", "8", CVAR_ARCHIVE | CVAR_LATCH );
 #endif
 	r_depthbits = ri.Cvar_Get( "r_depthbits", "0", CVAR_ARCHIVE | CVAR_LATCH );
-	r_overBrightBits = ri.Cvar_Get( "r_overBrightBits", "1", CVAR_ARCHIVE | CVAR_LATCH );
-	r_ignorehwgamma = ri.Cvar_Get( "r_ignorehwgamma", "1", CVAR_ARCHIVE | CVAR_LATCH );    //----(SA) changed this to default to '1' for Drew
+	r_overBrightBits = ri.Cvar_Get( "r_overBrightBits", "0", CVAR_ARCHIVE | CVAR_LATCH );	// Knightmare- disable by default
+	r_ignorehwgamma = ri.Cvar_Get( "r_ignorehwgamma", "0", CVAR_ARCHIVE | CVAR_LATCH );		// Knightmare- HW gamma enabled by default ----(SA) changed this to default to '1' for Drew
 	r_mode = ri.Cvar_Get( "r_mode", "3", CVAR_ARCHIVE | CVAR_LATCH );
 	r_fullscreen = ri.Cvar_Get( "r_fullscreen", "1", CVAR_ARCHIVE | CVAR_LATCH );
 	r_customwidth = ri.Cvar_Get( "r_customwidth", "1600", CVAR_ARCHIVE | CVAR_LATCH );
@@ -1017,7 +1091,7 @@ void R_Register( void ) {
 	//
 	// temporary latched variables that can only change over a restart
 	//
-	r_displayRefresh = ri.Cvar_Get( "r_displayRefresh", "0", CVAR_LATCH );
+	r_displayRefresh = ri.Cvar_Get( "r_displayRefresh", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	AssertCvarRange( r_displayRefresh, 0, 200, qtrue );
 	r_fullbright = ri.Cvar_Get( "r_fullbright", "0", CVAR_LATCH | CVAR_CHEAT );
 	r_mapOverBrightBits = ri.Cvar_Get( "r_mapOverBrightBits", "2", CVAR_LATCH );
@@ -1139,6 +1213,9 @@ void R_Register( void ) {
 	r_maxpolyverts = ri.Cvar_Get( "r_maxpolyverts", va( "%d", MAX_POLYVERTS ), 0 );
 
 	r_highQualityVideo = ri.Cvar_Get( "r_highQualityVideo", "1", CVAR_ARCHIVE );
+
+	r_screenshotFormat = ri.Cvar_Get( "r_screenshotFormat", "jpg", CVAR_ARCHIVE );	// Knightmare added
+
 	// make sure all the commands added here are also
 	// removed in R_Shutdown
 	ri.Cmd_AddCommand( "imagelist", R_ImageList_f );
@@ -1147,6 +1224,7 @@ void R_Register( void ) {
 	ri.Cmd_AddCommand( "modellist", R_Modellist_f );
 	ri.Cmd_AddCommand( "modelist", R_ModeList_f );
 	ri.Cmd_AddCommand( "screenshot", R_ScreenShot_f );
+	ri.Cmd_AddCommand( "screenshotTGA", R_ScreenShotTGA_f );	// Knightmare added
 	ri.Cmd_AddCommand( "screenshotJPEG", R_ScreenShotJPEG_f );
 	ri.Cmd_AddCommand( "gfxinfo", GfxInfo_f );
 	ri.Cmd_AddCommand( "taginfo", R_TagInfo_f );
@@ -1248,7 +1326,7 @@ void R_Init( void ) {
 
 	RB_ZombieFXInit();
 
-	err = qglGetError();
+	err = glGetError();
 	if ( err != GL_NO_ERROR ) {
 		ri.Printf( PRINT_ALL, "glGetError() = 0x%x\n", err );
 	}
@@ -1267,6 +1345,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 
 	ri.Cmd_RemoveCommand( "modellist" );
 	ri.Cmd_RemoveCommand( "screenshotJPEG" );
+	ri.Cmd_RemoveCommand( "screenshotTGA" );	// Knightmare added
 	ri.Cmd_RemoveCommand( "screenshot" );
 	ri.Cmd_RemoveCommand( "imagelist" );
 	ri.Cmd_RemoveCommand( "shaderlist" );

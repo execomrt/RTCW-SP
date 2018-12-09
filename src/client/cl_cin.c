@@ -1478,8 +1478,6 @@ SCR_RunCinematic
 Fetch and decompress the pending frame
 ==================
 */
-
-
 e_status CIN_RunCinematic( int handle ) {
 	// bk001204 - init
 	int start = 0;
@@ -1693,7 +1691,8 @@ SCR_DrawCinematic
 ==================
 */
 void CIN_DrawCinematic( int handle ) {
-	float x, y, w, h;  //, barheight;
+	float	x, y, w, h;
+	float	barheight, barwidth, vw, vh;
 	byte    *buf; \
 
 	if ( handle < 0 || handle >= MAX_VIDEO_HANDLES || cinTable[handle].status == FMV_EOF ) {
@@ -1709,23 +1708,35 @@ void CIN_DrawCinematic( int handle ) {
 	w = cinTable[handle].width;
 	h = cinTable[handle].height;
 	buf = cinTable[handle].buf;
-	SCR_AdjustFrom640( &x, &y, &w, &h );
 
+	// Knightmare- use letterbox scaling if specified
+	if ( cinTable[handle].letterBox )
+		SCR_AdjustFrom640( &x, &y, &w, &h, ALIGN_LETTERBOX );
+	else
+		SCR_AdjustFrom640( &x, &y, &w, &h, ALIGN_CENTER );
 
+	vw = (float)cls.glconfig.vidWidth;
+	vh = (float)cls.glconfig.vidHeight;
 	if ( cinTable[handle].letterBox ) {
-		float barheight;
-		float vh;
-		vh = (float)cls.glconfig.vidHeight;
-
-		barheight = ( (float)LETTERBOX_OFFSET / 480.0f ) * vh;  //----(SA)	added
-
-		re.SetColor( &colorBlack[0] );
-//		re.DrawStretchPic( 0, 0, SCREEN_WIDTH, LETTERBOX_OFFSET, 0, 0, 0, 0, cls.whiteShader );
-//		re.DrawStretchPic( 0, SCREEN_HEIGHT-LETTERBOX_OFFSET, SCREEN_WIDTH, LETTERBOX_OFFSET, 0, 0, 0, 0, cls.whiteShader );
-		//----(SA)	adjust for 640x480
-		re.DrawStretchPic( 0, 0, w, barheight, 0, 0, 0, 0, cls.whiteShader );
-		re.DrawStretchPic( 0, vh - barheight - 1, w, barheight + 1, 0, 0, 0, 0, cls.whiteShader );
+		barwidth = vw;	// Knightmare added
+	//	barheight = ( (float)LETTERBOX_OFFSET / 480.0f ) * vh;  //----(SA)	added
+		barheight = 0.5 * (vh - h);			// Knightmare changed
+		if (barheight > 0) {	// Knightmare- use full screen width
+			re.SetColor( &colorBlack[0] );
+			re.DrawStretchPic( 0, 0, barwidth, barheight, 0, 0, 0, 0, cls.whiteShader );
+			re.DrawStretchPic( 0, vh - barheight - 1, barwidth, barheight + 1, 0, 0, 0, 0, cls.whiteShader );
+		}
 	}
+
+	// Knightmare- add pillarbox bars when needed
+	barwidth = 0.5 * (vw - w);
+	barheight = vh;
+	if (barwidth > 0) {
+		re.SetColor( &colorBlack[0] );
+		re.DrawStretchPic( 0, 0, barwidth, barheight, 0, 0, 0, 0, cls.whiteShader );
+		re.DrawStretchPic( vw - barwidth - 1, 0, barwidth + 1, barheight, 0, 0, 0, 0, cls.whiteShader );
+	}
+	// end Knightmare
 
 	if ( cinTable[handle].dirty && ( cinTable[handle].CIN_WIDTH != cinTable[handle].drawX || cinTable[handle].CIN_HEIGHT != cinTable[handle].drawY ) ) {
 		int ix, iy, *buf2, *buf3, xm, ym, ll;
@@ -1781,7 +1792,6 @@ void CIN_DrawCinematic( int handle ) {
 		Hunk_FreeTempMemory( buf2 );
 		return;
 	}
-
 	re.DrawStretchRaw( x, y, w, h, cinTable[handle].drawX, cinTable[handle].drawY, buf, handle, cinTable[handle].dirty );
 	cinTable[handle].dirty = qfalse;
 }

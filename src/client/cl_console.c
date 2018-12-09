@@ -616,14 +616,15 @@ Draws the console with the solid background
 */
 
 void Con_DrawSolidConsole( float frac ) {
-	int i, x, y;
-	int rows;
-	short           *text;
-	int row;
-	int lines;
+	int		i, x, y;
+	int		rows;
+	short	*text;
+	int		row;
+	int		lines;
 //	qhandle_t		conShader;
-	int currentColor;
-	vec4_t color;
+	int		currentColor;
+	vec4_t	color;
+	float	conLeft, conWidth;	// Knightmare added
 
 	lines = cls.glconfig.vidHeight * frac;
 	if ( lines <= 0 ) {
@@ -634,9 +635,15 @@ void Con_DrawSolidConsole( float frac ) {
 		lines = cls.glconfig.vidHeight;
 	}
 
+	// Knightmare added
+	conLeft = 0;
+	conWidth = SCREEN_WIDTH;
+	SCR_AdjustFrom640 (&conLeft, NULL, &conWidth, NULL, ALIGN_STRETCH);
+	// end Knightmare
+
 	// on wide screens, we will center the text
 	con.xadjust = 0;
-	SCR_AdjustFrom640( &con.xadjust, NULL, NULL, NULL );
+	SCR_AdjustFrom640 (&con.xadjust, NULL, NULL, NULL, ALIGN_STRETCH);
 
 	// draw the background
 	y = frac * SCREEN_HEIGHT - 2;
@@ -668,12 +675,12 @@ void Con_DrawSolidConsole( float frac ) {
 
 	i = strlen( Q3_VERSION );
 
-	for ( x = 0 ; x < i ; x++ ) {
-
-		SCR_DrawSmallChar( cls.glconfig.vidWidth - ( i - x ) * SMALLCHAR_WIDTH,
-
+	for ( x = 0 ; x < i ; x++ )
+	{
+		// Knightmare- use 2D coord left instead of screen left
+	//	SCR_DrawSmallChar( cls.glconfig.vidWidth - ( i - x ) * SMALLCHAR_WIDTH,
+		SCR_DrawSmallChar( (int)(conLeft+conWidth) - ( i - x ) * SMALLCHAR_WIDTH,
 						   ( lines - ( SMALLCHAR_HEIGHT + SMALLCHAR_HEIGHT / 2 ) ), Q3_VERSION[x] );
-
 	}
 
 

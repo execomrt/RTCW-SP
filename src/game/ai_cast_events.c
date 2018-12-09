@@ -387,8 +387,10 @@ void AICast_Die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	// dying ai's can trigger a target
 	if ( !cs->rebirthTime ) {
 		G_UseTargets( self, self );
+
 		// really dead now, so call the script
 		AICast_ScriptEvent( cs, "death", attacker->aiName ? attacker->aiName : "" );
+
 		// call the deathfunc for this cast, so we can play associated sounds, or do any character-specific things
 		if ( !( cs->aiFlags & AIFL_DENYACTION ) && cs->deathfunc ) {
 			cs->deathfunc( self, attacker, damage, meansOfDeath );   //----(SA)	added mod

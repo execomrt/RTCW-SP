@@ -438,7 +438,8 @@ void idStr::snprintf
 	va_list argptr;
 
 	va_start( argptr,fmt );
-	len = vsprintf( buffer,fmt,argptr );
+//	len = vsprintf( buffer, fmt, argptr );
+	len = Q_vsnprintf( buffer, sizeof(buffer), fmt, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	assert( len < size );

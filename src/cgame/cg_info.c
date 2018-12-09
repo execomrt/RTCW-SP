@@ -55,7 +55,7 @@ static void CG_DrawLoadingIcons( void ) {
 	for ( n = 0; n < loadingPlayerIconCount; n++ ) {
 		x = 16 + n * 78;
 		y = 324;
-		CG_DrawPic( x, y, 64, 64, loadingPlayerIcons[n] );
+		CG_DrawPic( x, y, 64, 64, loadingPlayerIcons[n], ALIGN_BOTTOM );
 	}
 
 	for ( n = 0; n < loadingItemIconCount; n++ ) {
@@ -64,7 +64,7 @@ static void CG_DrawLoadingIcons( void ) {
 			y += 40;
 		}
 		x = 16 + n % 13 * 48;
-		CG_DrawPic( x, y, 32, 32, loadingItemIcons[n] );
+		CG_DrawPic( x, y, 32, 32, loadingItemIcons[n], ALIGN_BOTTOM );
 	}
 }
 
@@ -312,29 +312,29 @@ void CG_DrawExitStats( void ) {
 
 	// background
 	color2[3] *= 0.6f;
-	CG_FilledBar( 150, 104, 340, 230, color2, NULL, NULL, 1.0f, 0 );
+	CG_FilledBar( 150, 104, 340, 230, color2, NULL, NULL, 1.0f, 0, ALIGN_CENTER );
 
 	color2[0] = color2[1] = color2[2] = 0.3f;
 	color2[3] *= 0.6f;
 
 	// border
-	CG_FilledBar( 148, 104, 2, 230, color2, NULL, NULL, 1.0f, 0 );    // left
-	CG_FilledBar( 490, 104, 2, 230, color2, NULL, NULL, 1.0f, 0 );    // right
-	CG_FilledBar( 148, 102, 344, 2, color2, NULL, NULL, 1.0f, 0 );    // top
-	CG_FilledBar( 148, 334, 344, 2, color2, NULL, NULL, 1.0f, 0 );    // bot
+	CG_FilledBar( 148, 104, 2, 230, color2, NULL, NULL, 1.0f, 0, ALIGN_CENTER );    // left
+	CG_FilledBar( 490, 104, 2, 230, color2, NULL, NULL, 1.0f, 0, ALIGN_CENTER );    // right
+	CG_FilledBar( 148, 102, 344, 2, color2, NULL, NULL, 1.0f, 0, ALIGN_CENTER );    // top
+	CG_FilledBar( 148, 334, 344, 2, color2, NULL, NULL, 1.0f, 0, ALIGN_CENTER );    // bot
 
 
 	// text boxes
 	color2[0] = color2[1] = color2[2] = 0.4f;
 	for ( i = 0; i < 5; i++ ) {
-		CG_FilledBar( 170, 154 + ( 28 * i ), 300, 20, color2, NULL, NULL, 1.0f, 0 );
+		CG_FilledBar( 170, 154 + ( 28 * i ), 300, 20, color2, NULL, NULL, 1.0f, 0, ALIGN_CENTER );
 	}
 
 
 	// green title
 	color2[0] = color2[2] = 0;
 	color2[1] = 0.3f;
-	CG_FilledBar( 150, 104, 340, 20, color2, NULL, NULL, 1.0f, 0 );
+	CG_FilledBar( 150, 104, 340, 20, color2, NULL, NULL, 1.0f, 0, ALIGN_CENTER );
 
 	color2[0] = color2[1] = color2[2] = 0.2f;
 
@@ -343,19 +343,19 @@ void CG_DrawExitStats( void ) {
 	color2[3] = color[3];
 //	CG_Text_Paint(280, 120, 2, 0.25f, color2, va("%s", CG_translateString("end_title")), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE);
 	//----(SA)	scale change per MK
-	CG_Text_Paint( 270, 120, 2, 0.313f, color2, va( "%s", CG_translateString( "end_title" ) ), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE );
+	CG_Text_Paint( 270, 120, 2, 0.313f, color2, va( "%s", CG_translateString( "end_title" ) ), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, ALIGN_CENTER );
 
 	color2[0] = color2[1] = color2[2] = 1;
 	if ( cg.cursorHintIcon == HINT_NOEXIT ) {
 		// "exit not available"
 //		CG_Text_Paint(250, 320, 2, 0.3f, color2, va("%s", CG_translateString("end_noexit")), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE);
 		//----(SA)	scale change per MK
-		CG_Text_Paint( 260, 320, 2, 0.225f, color2, va( "%s", CG_translateString( "end_noexit" ) ), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE );
+		CG_Text_Paint( 260, 320, 2, 0.225f, color2, va( "%s", CG_translateString( "end_noexit" ) ), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, ALIGN_CENTER );
 	} else {
 		// "forward to proceed"
 //		CG_Text_Paint(230, 320, 2, 0.3f, color2, va("%s", CG_translateString("end_exit")), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE);
 		//----(SA)	scale change per MK
-		CG_Text_Paint( 250, 320, 2, 0.225f, color2, va( "%s", CG_translateString( "end_exit" ) ), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE );
+		CG_Text_Paint( 250, 320, 2, 0.225f, color2, va( "%s", CG_translateString( "end_exit" ) ), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, ALIGN_CENTER );
 	}
 
 	mstats = (char*)str + 2;    // add offset for 's='
@@ -400,7 +400,7 @@ void CG_DrawExitStats( void ) {
 				break;
 			}
 
-			CG_Text_Paint( statsItems[i].formatX, y, 2, 0.3, statsItems[i].formatColor, formatStr, 0, 0, statsItems[i].formatFlags );
+			CG_Text_Paint( statsItems[i].formatX, y, 2, 0.3, statsItems[i].formatColor, formatStr, 0, 0, statsItems[i].formatFlags, ALIGN_CENTER );
 //			UI_DrawProportionalString( statsItems[i].formatX, y, formatStr, statsItems[i].formatFlags, *statsItems[i].formatColor );
 		}
 
@@ -420,7 +420,7 @@ void CG_DrawExitStats( void ) {
 //		UI_DrawProportionalString( statsItems[i].labelX, y, statsItems[i].label, statsItems[i].labelFlags, *statsItems[i].labelColor );
 
 //		CG_Text_Paint(statsItems[i].labelX, y, 2, 0.3, statsItems[i].labelColor, va("%s:", CG_translateString(statsItems[i].label)), 0, 0, statsItems[i].labelFlags);
-		CG_Text_Paint( statsItems[i].labelX, y, 2, 0.3, color2, va( "%s:", CG_translateString( statsItems[i].label ) ), 0, 0, statsItems[i].labelFlags );
+		CG_Text_Paint( statsItems[i].labelX, y, 2, 0.3, color2, va( "%s:", CG_translateString( statsItems[i].label ) ), 0, 0, statsItems[i].labelFlags, ALIGN_CENTER );
 
 	}
 	token = COM_Parse( &mstats );
@@ -440,15 +440,15 @@ void CG_DrawInformation( void ) {
 	const char  *s;
 	const char  *info;
 	const char  *sysInfo;
-	int y;
-	int value;
-	qhandle_t levelshot = 0;   // TTimo: init
+	int			y;
+	int			value;
+	qhandle_t	levelshot = 0;   // TTimo: init
 //	qhandle_t	detail;
-	char buf[1024];
-	static int lastDraw = 0;  // Ridah, so we don't draw the screen more often than we need to
-	int ms;
-	static int callCount = 0;
-	float percentDone;
+	char		buf[1024];
+	static int	lastDraw = 0;  // Ridah, so we don't draw the screen more often than we need to
+	int			ms;
+	static int	callCount = 0;
+	float		percentDone;
 
 	int expectedHunk;
 	char hunkBuf[MAX_QPATH];
@@ -516,7 +516,7 @@ void CG_DrawInformation( void ) {
 			if ( percentDone > 0.97 ) { // never actually show 100%, since we are not in the game yet
 				percentDone = 0.97;
 			}
-			CG_HorizontalPercentBar( xy[0] + 10, xy[1] + wh[1] - 10, wh[0] - 20, 10, percentDone );
+			CG_HorizontalPercentBar( xy[0] + 10, xy[1] + wh[1] - 10, wh[0] - 20, 10, percentDone, ALIGN_CENTER );
 		} else {
 			UI_DrawProportionalString( 320, xy[1] + wh[1] - 10, "please wait",
 									   UI_CENTER | UI_EXSMALLFONT | UI_DROPSHADOW, color );
@@ -541,7 +541,7 @@ void CG_DrawInformation( void ) {
 					percentDone = 0.97;
 				}
 
-				CG_HorizontalPercentBar( xy[0], xy[1], wh[0], wh[1], percentDone );
+				CG_HorizontalPercentBar( xy[0], xy[1], wh[0], wh[1], percentDone, ALIGN_CENTER );
 			}
 		}
 

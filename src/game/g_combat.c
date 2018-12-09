@@ -1222,6 +1222,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 					case AICHAR_AMERICAN:
 					case AICHAR_ELITEGUARD:
 					case AICHAR_PARTISAN:
+					case AICHAR_RUSSIAN:	// Knightmare added
 					case AICHAR_CIVILIAN:
 						take = 200;
 						break;
@@ -1250,6 +1251,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 				case AICHAR_ELITEGUARD:
 				case AICHAR_BLACKGUARD:
 				case AICHAR_PARTISAN:
+				case AICHAR_RUSSIAN:	// Knightmare added
 				case AICHAR_CIVILIAN:
 					take = 200;
 					break;

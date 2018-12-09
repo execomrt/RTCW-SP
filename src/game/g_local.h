@@ -774,7 +774,7 @@ void FinishSpawningItem( gentity_t *ent );
 void Think_Weapon( gentity_t *ent );
 int ArmorIndex( gentity_t *ent );
 void Fill_Clip( playerState_t *ps, int weapon );
-void    Add_Ammo( gentity_t *ent, int weapon, int count, qboolean fillClip );
+void Add_Ammo( gentity_t *ent, int weapon, int count, qboolean fillClip );
 void Touch_Item( gentity_t *ent, gentity_t *other, trace_t *trace );
 
 // Touch_Item_Auto is bound by the rules of autoactivation (if cg_autoactivate is 0, only touch on "activate")
@@ -1165,7 +1165,6 @@ extern vmCvar_t g_soldierChargeTime;
 // jpw
 
 extern vmCvar_t g_playerStart;      //----(SA)	added
-
 
 void    trap_Printf( const char *fmt );
 void    trap_Error( const char *fmt );

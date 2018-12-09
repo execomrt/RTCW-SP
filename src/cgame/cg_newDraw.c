@@ -210,12 +210,12 @@ static void CG_DrawPlayerArmorValue( rectDef_t *rect, int font, float scale, vec
 
 	if ( shader ) {
 		trap_R_SetColor( color );
-		CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader );
+		CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader, rect->scrAlign );
 		trap_R_SetColor( NULL );
 	} else {
 		Com_sprintf( num, sizeof( num ), "%i", value );
 		value = CG_Text_Width( num, font, scale, 0 );
-		CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle );
+		CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle, rect->scrAlign );
 	}
 }
 
@@ -376,7 +376,7 @@ static void CG_DrawPlayerWeaponIcon( rectDef_t *rect, qboolean drawHighlighted, 
 		}
 
 
-		CG_DrawPic( x, y, w, h, icon );
+		CG_DrawPic( x, y, w, h, icon, rect->scrAlign );
 	}
 }
 
@@ -400,7 +400,7 @@ static void CG_DrawPlayerAmmoIcon( rectDef_t *rect, qboolean draw2D ) {
 		qhandle_t icon;
 		icon = cg_weapons[ cg.predictedPlayerState.weapon ].ammoIcon;
 		if ( icon ) {
-			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, icon );
+			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, icon, rect->scrAlign );
 		}
 	} else if ( cg_draw3dIcons.integer ) {
 		if ( cent->currentState.weapon && cg_weapons[ cent->currentState.weapon ].ammoModel ) {
@@ -409,7 +409,7 @@ static void CG_DrawPlayerAmmoIcon( rectDef_t *rect, qboolean draw2D ) {
 			origin[1] = 0;
 			origin[2] = 0;
 			angles[YAW] = 90 + 20 * sin( cg.time / 1000.0 );
-			CG_Draw3DModel( rect->x, rect->y, rect->w, rect->h, cg_weapons[ cent->currentState.weapon ].ammoModel, 0, origin, angles );
+			CG_Draw3DModel( rect->x, rect->y, rect->w, rect->h, cg_weapons[ cent->currentState.weapon ].ammoModel, 0, origin, angles, rect->scrAlign );
 		}
 	}
 }
@@ -521,10 +521,10 @@ static void CG_DrawCursorhint( rectDef_t *rect ) {
 
 	// set color and draw the hint
 	trap_R_SetColor( color );
-	CG_DrawPic( rect->x - halfscale, rect->y - halfscale, rect->w + scale, rect->h + scale, icon );
+	CG_DrawPic( rect->x - halfscale, rect->y - halfscale, rect->w + scale, rect->h + scale, icon, rect->scrAlign );
 
 	if ( icon2 ) {
-		CG_DrawPic( rect->x - halfscale, rect->y - halfscale, rect->w + scale, rect->h + scale, icon2 );
+		CG_DrawPic( rect->x - halfscale, rect->y - halfscale, rect->w + scale, rect->h + scale, icon2, rect->scrAlign );
 	}
 
 	trap_R_SetColor( NULL );
@@ -536,7 +536,7 @@ static void CG_DrawCursorhint( rectDef_t *rect ) {
 		} else {
 			Vector4Set( color, 0, 0, 1, 0.5f );
 		}
-		CG_FilledBar( rect->x, rect->y + rect->h + 4, rect->w, 8, color, NULL, NULL, (float)cg.cursorHintValue / 255.0f, 0 );
+		CG_FilledBar( rect->x, rect->y + rect->h + 4, rect->w, 8, color, NULL, NULL, (float)cg.cursorHintValue / 255.0f, 0, rect->scrAlign );
 	}
 
 }
@@ -563,7 +563,7 @@ static void CG_DrawMessageIcon( rectDef_t *rect ) {
 		icon = cgs.media.youGotMailShader;
 	}
 
-	CG_DrawPic( rect->x, rect->y, rect->w, rect->h, icon );
+	CG_DrawPic( rect->x, rect->y, rect->w, rect->h, icon, rect->scrAlign );
 }
 
 
@@ -636,18 +636,18 @@ static void CG_DrawPlayerAmmoValue( rectDef_t *rect, int font, float scale, vec4
 	if ( value > -1 ) {
 		if ( shader ) {
 			trap_R_SetColor( color );
-			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader );
+			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader, rect->scrAlign );
 			trap_R_SetColor( NULL );
 		} else {
 			Com_sprintf( num, sizeof( num ), "%i", value );
 			value = CG_Text_Width( num, font, scale, 0 );
-			CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle );
+			CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle, rect->scrAlign );
 
 //			if(special) {	// draw '0' for akimbo guns
 			if ( value2 || ( special && type == 1 ) ) {
 				Com_sprintf( num, sizeof( num ), "%i /", value2 );
 				value = CG_Text_Width( num, font, scale, 0 );
-				CG_Text_Paint( -30 + rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle );
+				CG_Text_Paint( -30 + rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle, rect->scrAlign );
 			}
 		}
 	}
@@ -703,7 +703,7 @@ static void CG_DrawPlayerHead( rectDef_t *rect, qboolean draw2D ) {
 	angles[YAW] = cg.headStartYaw + ( cg.headEndYaw - cg.headStartYaw ) * frac;
 	angles[PITCH] = cg.headStartPitch + ( cg.headEndPitch - cg.headStartPitch ) * frac;
 
-	CG_DrawHead( x, rect->y, rect->w, rect->h, cg.snap->ps.clientNum, angles );
+	CG_DrawHead( x, rect->y, rect->w, rect->h, cg.snap->ps.clientNum, angles, rect->scrAlign );
 }
 
 static void CG_DrawSelectedPlayerHealth( rectDef_t *rect, int font, float scale, vec4_t color, qhandle_t shader, int textStyle ) {
@@ -715,12 +715,12 @@ static void CG_DrawSelectedPlayerHealth( rectDef_t *rect, int font, float scale,
 	if ( ci ) {
 		if ( shader ) {
 			trap_R_SetColor( color );
-			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader );
+			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader, rect->scrAlign );
 			trap_R_SetColor( NULL );
 		} else {
 			Com_sprintf( num, sizeof( num ), "%i", ci->health );
 			value = CG_Text_Width( num, font, scale, 0 );
-			CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle );
+			CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle, rect->scrAlign );
 		}
 	}
 }
@@ -735,12 +735,12 @@ static void CG_DrawSelectedPlayerArmor( rectDef_t *rect, int font, float scale, 
 		if ( ci->armor > 0 ) {
 			if ( shader ) {
 				trap_R_SetColor( color );
-				CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader );
+				CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader, rect->scrAlign );
 				trap_R_SetColor( NULL );
 			} else {
 				Com_sprintf( num, sizeof( num ), "%i", ci->armor );
 				value = CG_Text_Width( num, font, scale, 0 );
-				CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle );
+				CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle, rect->scrAlign );
 			}
 		}
 	}
@@ -818,7 +818,7 @@ static void CG_DrawSelectedPlayerName( rectDef_t *rect, int font, float scale, v
 //	ci = cgs.clientinfo + ((voice) ? cgs.currentVoiceClient : sortedTeamPlayers[CG_GetSelectedPlayer()]);
 	ci = cgs.clientinfo + sortedTeamPlayers[CG_GetSelectedPlayer()];
 	if ( ci ) {
-		CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, ci->name, 0, 0, textStyle );
+		CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, ci->name, 0, 0, textStyle, rect->scrAlign );
 	}
 }
 
@@ -831,7 +831,7 @@ static void CG_DrawSelectedPlayerLocation( rectDef_t *rect, int font, float scal
 		if ( !p || !*p ) {
 			p = "unknown";
 		}
-		CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, p, 0, 0, textStyle );
+		CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, p, 0, 0, textStyle, rect->scrAlign );
 	}
 }
 
@@ -842,7 +842,7 @@ static void CG_DrawPlayerLocation( rectDef_t *rect, int font, float scale, vec4_
 		if ( !p || !*p ) {
 			p = "unknown";
 		}
-		CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, p, 0, 0, textStyle );
+		CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, p, 0, 0, textStyle, rect->scrAlign );
 	}
 }
 
@@ -854,9 +854,9 @@ static void CG_DrawSelectedPlayerWeapon( rectDef_t *rect ) {
 	ci = cgs.clientinfo + sortedTeamPlayers[CG_GetSelectedPlayer()];
 	if ( ci ) {
 		if ( cg_weapons[ci->curWeapon].weaponIcon[1] ) {
-			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cg_weapons[ci->curWeapon].weaponIcon[1] );  // (SA) using the 'selected' version of the icon
+			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cg_weapons[ci->curWeapon].weaponIcon[1], rect->scrAlign );  // (SA) using the 'selected' version of the icon
 		} else {
-			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cgs.media.deferShader );
+			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cgs.media.deferShader, rect->scrAlign );
 		}
 	}
 }
@@ -867,12 +867,12 @@ static void CG_DrawPlayerScore( rectDef_t *rect, int font, float scale, vec4_t c
 
 	if ( shader ) {
 		trap_R_SetColor( color );
-		CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader );
+		CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader, rect->scrAlign );
 		trap_R_SetColor( NULL );
 	} else {
 		Com_sprintf( num, sizeof( num ), "%i", value );
 		value = CG_Text_Width( num, font, scale, 0 );
-		CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle );
+		CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle, rect->scrAlign );
 	}
 }
 
@@ -898,10 +898,10 @@ static void CG_DrawHoldableItem( rectDef_t *rect, int font, float scale, qboolea
 				value = 3;  // 3 stages to icon, just draw full if beyond 'full'
 			}
 //			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cg_items[ value ].icons[2-(value-1)] );
-			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cg_items[item - bg_itemlist].icons[2 - ( value - 1 )] );
+			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cg_items[item - bg_itemlist].icons[2 - ( value - 1 )], rect->scrAlign );
 		} else {
 //			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cg_items[ value ].icons[0] );
-			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cg_items[item - bg_itemlist].icons[0] );
+			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cg_items[item - bg_itemlist].icons[0], rect->scrAlign );
 		}
 	}
 }
@@ -936,16 +936,16 @@ void flubfoo() {
 			//----(SA)	trying smaller text
 			//----(SA)	and off to the right side of the HUD
 //			CG_DrawPic( 100, (SCREEN_HEIGHT-ICON_SIZE)-8, ICON_SIZE/2, ICON_SIZE, cg_items[item - bg_itemlist].icons[2-(value-1)] );
-			CG_DrawPic( 606, 366, 24, 48, cg_items[item - bg_itemlist].icons[2 - ( value - 1 )] );
+			CG_DrawPic( 606, 366, 24, 48, cg_items[item - bg_itemlist].icons[2 - ( value - 1 )], ALIGN_CENTER );
 
 		} else {
 //			CG_DrawPic( 100, (SCREEN_HEIGHT-ICON_SIZE)-8, ICON_SIZE/2, ICON_SIZE, cg_items[item - bg_itemlist].icons[0] );
-			CG_DrawPic( 606, 366, 24, 48, cg_items[item - bg_itemlist].icons[0] );
+			CG_DrawPic( 606, 366, 24, 48, cg_items[item - bg_itemlist].icons[0], ALIGN_CENTER );
 
 		}
 
 		// draw the selection box so it's not just floating in space
-		CG_DrawPic( 606 - 4, 366 - 4, 32, 56, cgs.media.selectShader );
+		CG_DrawPic( 606 - 4, 366 - 4, 32, 56, cgs.media.selectShader, ALIGN_CENTER );
 	}
 }
 
@@ -962,14 +962,14 @@ static void CG_DrawPlayerItem( rectDef_t *rect, int font, float scale, qboolean 
 
 		if ( qtrue ) {
 			CG_RegisterItemVisuals( value );
-			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cg_items[ value ].icons[0] );
+			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cg_items[ value ].icons[0], rect->scrAlign );
 		} else {
 			VectorClear( angles );
 			origin[0] = 90;
 			origin[1] = 0;
 			origin[2] = -10;
 			angles[YAW] = ( cg.time & 2047 ) * 360 / 2048.0;
-			CG_Draw3DModel( rect->x, rect->y, rect->w, rect->h, cg_items[ value ].models[0], 0, origin, angles );
+			CG_Draw3DModel( rect->x, rect->y, rect->w, rect->h, cg_items[ value ].models[0], 0, origin, angles, rect->scrAlign );
 		}
 	}
 }
@@ -990,7 +990,7 @@ static void CG_DrawSelectedPlayerPowerup( rectDef_t *rect, qboolean draw2D ) {
 				gitem_t *item;
 				item = BG_FindItemForPowerup( j );
 				if ( item ) {
-					CG_DrawPic( x, y, rect->w, rect->h, trap_R_RegisterShader( item->icon ) );
+					CG_DrawPic( x, y, rect->w, rect->h, trap_R_RegisterShader( item->icon ), rect->scrAlign );
 					x += 3;
 					y += 3;
 					return;
@@ -1037,15 +1037,15 @@ static void CG_DrawSelectedPlayerHead( rectDef_t *rect, qboolean draw2D, qboolea
 			angles[YAW] = 180;
 			angles[ROLL] = 0;
 
-			CG_Draw3DModel( rect->x, rect->y, rect->w, rect->h, ci->headModel, ci->headSkin, origin, angles );
+			CG_Draw3DModel( rect->x, rect->y, rect->w, rect->h, ci->headModel, ci->headSkin, origin, angles, rect->scrAlign );
 
 		} else if ( cg_drawIcons.integer ) {
-			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, ci->modelIcon );
+			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, ci->modelIcon, rect->scrAlign );
 		}
 
 		// if they are deferred, draw a cross out
 		if ( ci->deferred ) {
-			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cgs.media.deferShader );
+			CG_DrawPic( rect->x, rect->y, rect->w, rect->h, cgs.media.deferShader, rect->scrAlign );
 		}
 	}
 }
@@ -1062,12 +1062,12 @@ static void CG_DrawPlayerHealth( rectDef_t *rect, int font, float scale, vec4_t 
 
 	if ( shader ) {
 		trap_R_SetColor( color );
-		CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader );
+		CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader, rect->scrAlign );
 		trap_R_SetColor( NULL );
 	} else {
 		Com_sprintf( num, sizeof( num ), "%i", value );
 		value = CG_Text_Width( num, font, scale, 0 );
-		CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle );
+		CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle, rect->scrAlign );
 	}
 }
 
@@ -1081,7 +1081,7 @@ static void CG_DrawRedScore( rectDef_t *rect, int font, float scale, vec4_t colo
 		Com_sprintf( num, sizeof( num ), "%i", cgs.scores1 );
 	}
 	value = CG_Text_Width( num, font, scale, 0 );
-	CG_Text_Paint( rect->x + rect->w - value, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle );
+	CG_Text_Paint( rect->x + rect->w - value, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle, rect->scrAlign );
 }
 
 static void CG_DrawBlueScore( rectDef_t *rect, int font, float scale, vec4_t color, qhandle_t shader, int textStyle ) {
@@ -1094,7 +1094,7 @@ static void CG_DrawBlueScore( rectDef_t *rect, int font, float scale, vec4_t col
 		Com_sprintf( num, sizeof( num ), "%i", cgs.scores2 );
 	}
 	value = CG_Text_Width( num, font, scale, 0 );
-	CG_Text_Paint( rect->x + rect->w - value, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle );
+	CG_Text_Paint( rect->x + rect->w - value, rect->y + rect->h, font, scale, color, num, 0, 0, textStyle, rect->scrAlign );
 }
 
 // FIXME: team name support
@@ -1308,7 +1308,7 @@ static void CG_DrawCTFPowerUp( rectDef_t *rect ) {
 
 
 static void CG_DrawTeamColor( rectDef_t *rect, vec4_t color ) {
-	CG_DrawTeamBackground( rect->x, rect->y, rect->w, rect->h, color[3], cg.snap->ps.persistant[PERS_TEAM] );
+	CG_DrawTeamBackground( rect->x, rect->y, rect->w, rect->h, color[3], cg.snap->ps.persistant[PERS_TEAM], rect->scrAlign );
 }
 
 
@@ -1389,10 +1389,10 @@ static void CG_DrawAreaPowerUp( rectDef_t *rect, int align, float spacing, int f
 				trap_R_SetColor( modulate );
 			}
 
-			CG_DrawPic( r2.x, r2.y, r2.w * .75, r2.h, trap_R_RegisterShader( item->icon ) );
+			CG_DrawPic( r2.x, r2.y, r2.w * .75, r2.h, trap_R_RegisterShader( item->icon ), r2.scrAlign );
 
 			Com_sprintf( num, sizeof( num ), "%i", sortedTime[i] / 1000 );
-			CG_Text_Paint( r2.x + ( r2.w * .75 ) + 3, r2.y + r2.h, font, scale, color, num, 0, 0, 0 );
+			CG_Text_Paint( r2.x + ( r2.w * .75 ) + 3, r2.y + r2.h, font, scale, color, num, 0, 0, 0, r2.scrAlign );
 			*inc += r2.w + spacing;
 		}
 
@@ -1427,7 +1427,8 @@ float CG_GetValue( int ownerDraw, int type ) {
 		if ( cent->currentState.weapon ) {
 			if ( type == RANGETYPE_RELATIVE ) {
 				int weap = BG_FindAmmoForWeapon( cent->currentState.weapon );
-				return (float)ps->ammo[weap] / (float)ammoTable[weap].maxammo;
+			//	return (float)ps->ammo[weap] / (float)ammoTable[weap].maxammo;
+				return (float)ps->ammo[weap] / (float)staticAmmoTable[weap].maxammo;	// Knightmare- changed to refer to static ammo table
 			} else {
 				return ps->ammo[BG_FindAmmoForWeapon( cent->currentState.weapon )];
 			}
@@ -1436,7 +1437,8 @@ float CG_GetValue( int ownerDraw, int type ) {
 	case CG_PLAYER_AMMOCLIP_VALUE:
 		if ( cent->currentState.weapon ) {
 			if ( type == RANGETYPE_RELATIVE ) {
-				return (float)ps->ammoclip[BG_FindClipForWeapon( cent->currentState.weapon )] / (float)ammoTable[cent->currentState.weapon].maxclip;
+			//	return (float)ps->ammoclip[BG_FindClipForWeapon( cent->currentState.weapon )] / (float)ammoTable[cent->currentState.weapon].maxclip;
+				return (float)ps->ammoclip[BG_FindClipForWeapon( cent->currentState.weapon )] / (float)staticAmmoTable[cent->currentState.weapon].maxclip;	// Knightmare- changed to refer to static ammo table
 			} else {
 				return ps->ammoclip[BG_FindClipForWeapon( cent->currentState.weapon )];
 			}
@@ -1704,15 +1706,15 @@ static void CG_DrawPlayerHasFlag( rectDef_t *rect, qboolean force2D ) {
 }
 
 static void CG_DrawAreaSystemChat( rectDef_t *rect, int font, float scale, vec4_t color, qhandle_t shader ) {
-	CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, systemChat, 0, 0, 0 );
+	CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, systemChat, 0, 0, 0, rect->scrAlign );
 }
 
 static void CG_DrawAreaTeamChat( rectDef_t *rect, int font, float scale, vec4_t color, qhandle_t shader ) {
-	CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color,teamChat1, 0, 0, 0 );
+	CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color,teamChat1, 0, 0, 0, rect->scrAlign );
 }
 
 static void CG_DrawAreaChat( rectDef_t *rect, int font, float scale, vec4_t color, qhandle_t shader ) {
-	CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, teamChat2, 0, 0, 0 );
+	CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, teamChat2, 0, 0, 0, rect->scrAlign );
 }
 
 const char *CG_GetKillerText() {
@@ -1728,7 +1730,7 @@ static void CG_DrawKiller( rectDef_t *rect, int font, float scale, vec4_t color,
 	// fragged by ... line
 	if ( cg.killerName[0] ) {
 		int x = rect->x + rect->w / 2;
-		CG_Text_Paint( x - CG_Text_Width( CG_GetKillerText(),font, scale, 0 ) / 2, rect->y + rect->h, font, scale, color, CG_GetKillerText(), 0, 0, textStyle );
+		CG_Text_Paint( x - CG_Text_Width( CG_GetKillerText(),font, scale, 0 ) / 2, rect->y + rect->h, font, scale, color, CG_GetKillerText(), 0, 0, textStyle, rect->scrAlign );
 	}
 
 }
@@ -1736,18 +1738,18 @@ static void CG_DrawKiller( rectDef_t *rect, int font, float scale, vec4_t color,
 
 static void CG_DrawCapFragLimit( rectDef_t *rect, int font, float scale, vec4_t color, qhandle_t shader, int textStyle ) {
 	int limit = ( cgs.gametype >= GT_CTF ) ? cgs.capturelimit : cgs.fraglimit;
-	CG_Text_Paint( rect->x, rect->y, font, scale, color, va( "%2i", limit ),0, 0, textStyle );
+	CG_Text_Paint( rect->x, rect->y, font, scale, color, va( "%2i", limit ),0, 0, textStyle, rect->scrAlign );
 }
 
 static void CG_Draw1stPlace( rectDef_t *rect, int font, float scale, vec4_t color, qhandle_t shader, int textStyle ) {
 	if ( cgs.scores1 != SCORE_NOT_PRESENT ) {
-		CG_Text_Paint( rect->x, rect->y, font, scale, color, va( "%2i", cgs.scores1 ),0, 0, textStyle );
+		CG_Text_Paint( rect->x, rect->y, font, scale, color, va( "%2i", cgs.scores1 ),0, 0, textStyle, rect->scrAlign );
 	}
 }
 
 static void CG_Draw2ndPlace( rectDef_t *rect, int font, float scale, vec4_t color, qhandle_t shader, int textStyle ) {
 	if ( cgs.scores2 != SCORE_NOT_PRESENT ) {
-		CG_Text_Paint( rect->x, rect->y, font, scale, color, va( "%2i", cgs.scores2 ),0, 0, textStyle );
+		CG_Text_Paint( rect->x, rect->y, font, scale, color, va( "%2i", cgs.scores2 ),0, 0, textStyle, rect->scrAlign );
 	}
 }
 
@@ -1770,7 +1772,7 @@ const char *CG_GetGameStatusText() {
 }
 
 static void CG_DrawGameStatus( rectDef_t *rect, int font, float scale, vec4_t color, qhandle_t shader, int textStyle ) {
-	CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, CG_GetGameStatusText(), 0, 0, textStyle );
+	CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, CG_GetGameStatusText(), 0, 0, textStyle, rect->scrAlign );
 }
 
 const char *CG_GameTypeString() {
@@ -1792,7 +1794,7 @@ const char *CG_GameTypeString() {
 	return "";
 }
 static void CG_DrawGameType( rectDef_t *rect, int font, float scale, vec4_t color, qhandle_t shader, int textStyle ) {
-	CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, CG_GameTypeString(), 0, 0, textStyle );
+	CG_Text_Paint( rect->x, rect->y + rect->h, font, scale, color, CG_GameTypeString(), 0, 0, textStyle, rect->scrAlign );
 }
 
 static void CG_Text_Paint_Limit( float *maxX, float x, float y, int font, float scale, vec4_t color, const char* text, float adjust, int limit ) {
@@ -1848,7 +1850,7 @@ static void CG_Text_Paint_Limit( float *maxX, float x, float y, int font, float 
 								   glyph->t,
 								   glyph->s2,
 								   glyph->t2,
-								   glyph->glyph );
+								   glyph->glyph, ALIGN_CENTER );
 				x += ( glyph->xSkip * useScale ) + adjust;
 				*maxX = x;
 				count++;
@@ -2099,12 +2101,12 @@ void CG_DrawMedal( int ownerDraw, rectDef_t *rect, int font, float scale, vec4_t
 	}
 
 	trap_R_SetColor( color );
-	CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader );
+	CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader, rect->scrAlign );
 
 	if ( text ) {
 		color[3] = 1.0;
 		value = CG_Text_Width( text, font, scale, 0 );
-		CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h + 10, font, scale, color, text, 0, 0, 0 );
+		CG_Text_Paint( rect->x + ( rect->w - value ) / 2, rect->y + rect->h + 10, font, scale, color, text, 0, 0, 0, rect->scrAlign );
 	}
 	trap_R_SetColor( NULL );
 
@@ -2135,7 +2137,7 @@ void CG_DrawWeapStability( rectDef_t *rect, vec4_t color, int align ) {
 		return;
 	}
 
-	CG_FilledBar( rect->x, rect->y, rect->w, rect->h, goodColor, badColor, NULL, (float)cg.snap->ps.aimSpreadScale / 255.0f, 2 | 4 | 256 ); // flags (BAR_CENTER|BAR_VERT|BAR_LERP_COLOR)
+	CG_FilledBar( rect->x, rect->y, rect->w, rect->h, goodColor, badColor, NULL, (float)cg.snap->ps.aimSpreadScale / 255.0f, 2 | 4 | 256, rect->scrAlign ); // flags (BAR_CENTER|BAR_VERT|BAR_LERP_COLOR)
 }
 
 
@@ -2161,7 +2163,7 @@ void CG_DrawWeapHeat( rectDef_t *rect, int align ) {
 //	flags|=32;		// BAR_BGSPACING_X0Y5	- different style
 
 	flags |= 256;     // BAR_COLOR_LERP
-	CG_FilledBar( rect->x, rect->y, rect->w, rect->h, color, color2, NULL, (float)cg.snap->ps.curWeapHeat / 255.0f, flags );
+	CG_FilledBar( rect->x, rect->y, rect->w, rect->h, color, color2, NULL, (float)cg.snap->ps.curWeapHeat / 255.0f, flags, rect->scrAlign );
 }
 
 
@@ -2186,11 +2188,11 @@ static void CG_DrawFatigue( rectDef_t *rect, vec4_t color, int align ) {
 		flags |= 1;   // BAR_LEFT (left, when vertical means grow 'up')
 	}
 
-	CG_FilledBar( rect->x, rect->y, rect->w, rect->h, color, NULL, NULL, (float)cg.snap->ps.sprintTime / SPRINTTIME, flags );
+	CG_FilledBar( rect->x, rect->y, rect->w, rect->h, color, NULL, NULL, (float)cg.snap->ps.sprintTime / SPRINTTIME, flags, rect->scrAlign );
 
 	// fill in the left side of the bar with the counter for the nofatigue powerup
 	if ( cg.snap->ps.powerups[PW_NOFATIGUE] ) {
-		CG_FilledBar( rect->x, rect->y, rect->w / 2, rect->h, colorBonus, NULL, NULL, cg.snap->ps.powerups[PW_NOFATIGUE] / BONUSTIME, flags );
+		CG_FilledBar( rect->x, rect->y, rect->w / 2, rect->h, colorBonus, NULL, NULL, cg.snap->ps.powerups[PW_NOFATIGUE] / BONUSTIME, flags, rect->scrAlign );
 	}
 // JPW NERVE -- added drawWeaponPercent in multiplayer, drawn to left
 	if ( cgs.gametype != GT_SINGLE_PLAYER ) {
@@ -2215,7 +2217,7 @@ static void CG_DrawFatigue( rectDef_t *rect, vec4_t color, int align ) {
 		color[1] = color[2] = barFrac;
 		color[3] = 0.25 + barFrac * 0.5;
 
-		CG_FilledBar( rect->x - rect->w, rect->y, rect->w / 2, rect->h, color, NULL, NULL, barFrac, flags );
+		CG_FilledBar( rect->x - rect->w, rect->y, rect->w / 2, rect->h, color, NULL, NULL, barFrac, flags, rect->scrAlign );
 	}
 // jpw
 }
@@ -2226,7 +2228,7 @@ static void CG_DrawFatigue( rectDef_t *rect, vec4_t color, int align ) {
 CG_OwnerDraw
 ==============
 */
-void CG_OwnerDraw( float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, int font, float scale, vec4_t color, qhandle_t shader, int textStyle ) {
+void CG_OwnerDraw( float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, int font, float scale, vec4_t color, qhandle_t shader, int textStyle, scralign_t scralign ) {
 	rectDef_t rect;
 
 	if ( cg_drawStatus.integer == 0 ) {
@@ -2241,6 +2243,7 @@ void CG_OwnerDraw( float x, float y, float w, float h, float text_x, float text_
 	rect.y = y;
 	rect.w = w;
 	rect.h = h;
+	rect.scrAlign = scralign;	// Knightmare added
 
 	switch ( ownerDraw ) {
 	case CG_PLAYER_WEAPON_ICON2D:

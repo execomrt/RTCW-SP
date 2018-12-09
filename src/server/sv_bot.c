@@ -177,7 +177,8 @@ void QDECL BotImport_Print( int type, char *fmt, ... ) {
 	va_list ap;
 
 	va_start( ap, fmt );
-	vsprintf( str, fmt, ap );
+//	vsprintf( str, fmt, ap );
+	Q_vsnprintf( str, sizeof(str), fmt, ap );	// Knightmare- buffer overflow fix
 	va_end( ap );
 
 	switch ( type ) {

@@ -33,6 +33,9 @@ If you have questions concerning this license or the applicable additional terms
 #ifndef __GLW_WIN_H__
 #define __GLW_WIN_H__
 
+#include "../glew/include/GL/glew.h"
+#include "../glew/include/GL/wglew.h"
+
 typedef struct
 {
 	WNDPROC wndproc;

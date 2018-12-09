@@ -588,7 +588,7 @@ typedef struct {
 	// -NERVE - SMF
 } playerInfo_t;
 
-void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int time );
+void UI_DrawPlayer( float x, float y, float w, float h, playerInfo_t *pi, int time, scralign_t align );	// Knightmare changed
 void UI_PlayerInfo_SetModel( playerInfo_t *pi, const char *model );
 void UI_PlayerInfo_SetInfo( playerInfo_t *pi, int legsAnim, int torsoAnim, vec3_t viewAngles, vec3_t moveAngles, weapon_t weaponNum, qboolean chat );
 qboolean UI_RegisterClientModelname( playerInfo_t *pi, const char *modelSkinName );
@@ -926,12 +926,12 @@ extern void         UI_MouseEvent( int dx, int dy );
 extern void         UI_Refresh( int realtime );
 extern qboolean     UI_ConsoleCommand( int realTime );
 extern float        UI_ClampCvar( float min, float max, float value );
-extern void         UI_DrawNamedPic( float x, float y, float width, float height, const char *picname );
-extern void         UI_DrawHandlePic( float x, float y, float w, float h, qhandle_t hShader );
-extern void         UI_FillRect( float x, float y, float width, float height, const float *color );
-extern void         UI_DrawRect( float x, float y, float width, float height, const float *color );
-extern void     UI_DrawTopBottom( float x, float y, float w, float h );
-extern void     UI_DrawSides( float x, float y, float w, float h );
+extern void         UI_DrawNamedPic( float x, float y, float width, float height, const char *picname, scralign_t align );	// Knightmare changed
+extern void         UI_DrawHandlePic( float x, float y, float w, float h, qhandle_t hShader, scralign_t align );	// Knightmare changed
+extern void         UI_FillRect( float x, float y, float width, float height, const float *color, scralign_t align  );	// Knightmare changed
+extern void         UI_DrawRect( float x, float y, float width, float height, const float *color, scralign_t align  );	// Knightmare changed
+extern void			UI_DrawTopBottom( float x, float y, float w, float h, scralign_t align );	// Knightmare changed
+extern void			UI_DrawSides( float x, float y, float w, float h, scralign_t align );	// Knightmare changed
 extern void         UI_UpdateScreen( void );
 extern void         UI_SetColor( const float *rgba );
 extern void         UI_LerpColor( vec4_t a, vec4_t b, vec4_t c, float t );
@@ -942,8 +942,8 @@ extern int          UI_ProportionalStringWidth( const char* str );
 extern void         UI_DrawString( int x, int y, const char* str, int style, vec4_t color );
 extern void         UI_DrawChar( int x, int y, int ch, int style, vec4_t color );
 extern qboolean     UI_CursorInRect( int x, int y, int width, int height );
-extern void         UI_AdjustFrom640( float *x, float *y, float *w, float *h );
-extern void         UI_DrawTextBox( int x, int y, int width, int lines );
+extern void         UI_AdjustFrom640( float *x, float *y, float *w, float *h, scralign_t align );	// Knightmare changed
+extern void         UI_DrawTextBox( int x, int y, int width, int lines, scralign_t align );	// Knightmare changed
 extern qboolean     UI_IsFullscreen( void );
 extern void         UI_SetActiveMenu( uiMenuCommand_t menu );
 extern void         UI_PushMenu( menuframework_s *menu );

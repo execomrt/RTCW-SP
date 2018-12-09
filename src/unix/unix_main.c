@@ -354,7 +354,8 @@ void Sys_Error( const char *error, ... ) {
 	CL_Shutdown();
 
 	va_start( argptr,error );
-	vsprintf( string,error,argptr );
+//	vsprintf( string, error, argptr );
+	Q_vsnprintf( string, sizeof(string), error, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 	fprintf( stderr, "Sys_Error: %s\n", string );
 
@@ -366,7 +367,8 @@ void Sys_Warn( char *warning, ... ) {
 	char string[1024];
 
 	va_start( argptr,warning );
-	vsprintf( string,warning,argptr );
+//	vsprintf( string, warning, argptr );
+	Q_vsnprintf( string, sizeof(string), warning, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	if ( ttycon_on ) {

@@ -37,10 +37,10 @@ If you have questions concerning this license or the applicable additional terms
 CG_DrawScoreboard
 =================
 */
-static void CG_DrawClientScore( int x, int y, score_t *score, float *color, float fade ) {
-	char string[1024];
-	vec3_t headAngles;
-	clientInfo_t    *ci;
+static void CG_DrawClientScore( int x, int y, score_t *score, float *color, float fade, scralign_t align ) {
+	char			string[1024];
+	vec3_t			headAngles;
+	clientInfo_t	*ci;
 
 	if ( score->client < 0 || score->client >= cgs.maxclients ) {
 		Com_Printf( "Bad score->client: %i\n", score->client );
@@ -51,16 +51,16 @@ static void CG_DrawClientScore( int x, int y, score_t *score, float *color, floa
 
 	// draw the handicap or bot skill marker
 	if ( ci->botSkill > 0 && ci->botSkill <= 5 ) {
-		CG_DrawPic( 0, y - 8, 32, 32, cgs.media.botSkillShaders[ ci->botSkill - 1 ] );
+		CG_DrawPic( 0, y - 8, 32, 32, cgs.media.botSkillShaders[ ci->botSkill - 1 ], align );
 	} else if ( ci->handicap < 100 ) {
 		Com_sprintf( string, sizeof( string ), "%i", ci->handicap );
-		CG_DrawSmallStringColor( 8, y, string, color );
+		CG_DrawSmallStringColor( 8, y, string, color, align );
 	}
 
 	// draw the wins / losses
 	if ( cgs.gametype == GT_TOURNAMENT ) {
 		Com_sprintf( string, sizeof( string ), "%i/%i", ci->wins, ci->losses );
-		CG_DrawSmallStringColor( x + SCOREBOARD_WIDTH + 2, y, string, color );
+		CG_DrawSmallStringColor( x + SCOREBOARD_WIDTH + 2, y, string, color, align );
 	}
 
 	// draw the face
@@ -68,14 +68,14 @@ static void CG_DrawClientScore( int x, int y, score_t *score, float *color, floa
 	headAngles[YAW] = 180;
 
 	CG_DrawHead( x - ICON_SIZE, y - ( ICON_SIZE - BIGCHAR_HEIGHT ) / 2, ICON_SIZE, ICON_SIZE,
-				 score->client, headAngles );
+				 score->client, headAngles, align );
 
 	if ( ci->powerups & ( 1 << PW_REDFLAG ) ) {
 		CG_DrawFlagModel( x - ICON_SIZE - ICON_SIZE / 2, y - ( ICON_SIZE - BIGCHAR_HEIGHT ) / 2, ICON_SIZE, ICON_SIZE,
-						  TEAM_RED );
+						  TEAM_RED, align );
 	} else if ( ci->powerups & ( 1 << PW_BLUEFLAG ) ) {
 		CG_DrawFlagModel( x - ICON_SIZE - ICON_SIZE / 2, y - ( ICON_SIZE - BIGCHAR_HEIGHT ) / 2, ICON_SIZE, ICON_SIZE,
-						  TEAM_BLUE );
+						  TEAM_BLUE, align );
 	}
 
 	// draw the score line
@@ -121,14 +121,14 @@ static void CG_DrawClientScore( int x, int y, score_t *score, float *color, floa
 		}
 
 		hcolor[3] = fade * 0.7;
-		CG_FillRect( x - 2, y,  SCOREBOARD_WIDTH, BIGCHAR_HEIGHT + 1, hcolor );
+		CG_FillRect( x - 2, y,  SCOREBOARD_WIDTH, BIGCHAR_HEIGHT + 1, hcolor, align );
 	}
 
-	CG_DrawBigString( x, y, string, fade );
+	CG_DrawBigString( x, y, string, fade, align );
 
 	// add the "ready" marker for intermission exiting
 	if ( cg.snap->ps.stats[ STAT_CLIENTS_READY ] & ( 1 << score->client ) ) {
-		CG_DrawBigStringColor( 0, y, "READY", color );
+		CG_DrawBigStringColor( 0, y, "READY", color, align );
 	}
 }
 
@@ -137,13 +137,13 @@ static void CG_DrawClientScore( int x, int y, score_t *score, float *color, floa
 CG_TeamScoreboard
 =================
 */
-static int CG_TeamScoreboard( int x, int y, team_t team, float fade ) {
-	int i;
-	score_t *score;
-	float color[4];
-	int count;
-	int lineHeight;
-	clientInfo_t    *ci;
+static int CG_TeamScoreboard( int x, int y, team_t team, float fade, scralign_t align ) {
+	int				i;
+	score_t			*score;
+	float			color[4];
+	int				count;
+	int				lineHeight;
+	clientInfo_t	*ci;
 
 	color[0] = color[1] = color[2] = 1.0;
 	color[3] = fade;
@@ -159,7 +159,7 @@ static int CG_TeamScoreboard( int x, int y, team_t team, float fade ) {
 			continue;
 		}
 
-		CG_DrawClientScore( x, y + lineHeight * count, score, color, fade );
+		CG_DrawClientScore( x, y + lineHeight * count, score, color, fade, align );
 		count++;
 	}
 
@@ -178,7 +178,7 @@ static int INFO_LATENCY_WIDTH   = 80;
 static int INFO_TEAM_HEIGHT     = 24;
 static int INFO_BORDER          = 2;
 
-static void WM_DrawClientScore( int x, int y, score_t *score, float *color, float fade ) {
+static void WM_DrawClientScore( int x, int y, score_t *score, float *color, float fade, scralign_t align ) {
 	float tempx;
 	vec4_t hcolor;
 	clientInfo_t *ci;
@@ -193,26 +193,26 @@ static void WM_DrawClientScore( int x, int y, score_t *score, float *color, floa
 		hcolor[3] = fade * 0.3;
 		VectorSet( hcolor, 0.4452, 0.1172, 0.0782 );            // DARK-RED
 
-		CG_FillRect( tempx, y + 1, INFO_PLAYER_WIDTH - INFO_BORDER, SMALLCHAR_HEIGHT - 1, hcolor );
+		CG_FillRect( tempx, y + 1, INFO_PLAYER_WIDTH - INFO_BORDER, SMALLCHAR_HEIGHT - 1, hcolor, align );
 		tempx += INFO_PLAYER_WIDTH;
 
-		CG_FillRect( tempx, y + 1, INFO_SCORE_WIDTH - INFO_BORDER, SMALLCHAR_HEIGHT - 1, hcolor );
+		CG_FillRect( tempx, y + 1, INFO_SCORE_WIDTH - INFO_BORDER, SMALLCHAR_HEIGHT - 1, hcolor, align );
 		tempx += INFO_SCORE_WIDTH;
 
-		CG_FillRect( tempx, y + 1, INFO_LATENCY_WIDTH - INFO_BORDER, SMALLCHAR_HEIGHT - 1, hcolor );
+		CG_FillRect( tempx, y + 1, INFO_LATENCY_WIDTH - INFO_BORDER, SMALLCHAR_HEIGHT - 1, hcolor, align );
 		tempx += INFO_LATENCY_WIDTH;
 	}
 
 	tempx = x;
 	ci = &cgs.clientinfo[score->client];
 
-	CG_DrawSmallString( tempx, y, ci->name, fade );
+	CG_DrawSmallString( tempx, y, ci->name, fade, align );
 	tempx += INFO_PLAYER_WIDTH;
 
-	CG_DrawSmallString( tempx, y, va( "%4i", score->score ), fade );
+	CG_DrawSmallString( tempx, y, va( "%4i", score->score ), fade, align );
 	tempx += INFO_SCORE_WIDTH;
 
-	CG_DrawSmallString( tempx, y, va( "%4i", score->ping ), fade );
+	CG_DrawSmallString( tempx, y, va( "%4i", score->ping ), fade, align );
 	tempx += INFO_LATENCY_WIDTH;
 }
 
@@ -221,10 +221,10 @@ static void WM_DrawClientScore( int x, int y, score_t *score, float *color, floa
 WM_TeamScoreboard
 =================
 */
-static int WM_TeamScoreboard( int x, int y, team_t team, float fade ) {
-	vec4_t hcolor;
-	float tempx;
-	int i;
+static int WM_TeamScoreboard( int x, int y, team_t team, float fade, scralign_t align ) {
+	vec4_t	hcolor;
+	float	tempx;
+	int		i;
 
 	hcolor[3] = fade;
 	if ( team == TEAM_RED ) {
@@ -252,20 +252,20 @@ static int WM_TeamScoreboard( int x, int y, team_t team, float fade ) {
 
 	tempx = x;
 
-	CG_FillRect( tempx, y, INFO_PLAYER_WIDTH - INFO_BORDER, INFO_TEAM_HEIGHT, hcolor );
+	CG_FillRect( tempx, y, INFO_PLAYER_WIDTH - INFO_BORDER, INFO_TEAM_HEIGHT, hcolor, align );
 	if ( team == TEAM_RED ) {
-		CG_DrawSmallString( tempx, y, "Axis", fade );
+		CG_DrawSmallString( tempx, y, "Axis", fade, align );
 	} else if ( team == TEAM_BLUE ) {
-		CG_DrawSmallString( tempx, y, "Allies", fade );
+		CG_DrawSmallString( tempx, y, "Allies", fade, align );
 	} else {
-		CG_DrawSmallString( tempx, y, "Spectators", fade );
+		CG_DrawSmallString( tempx, y, "Spectators", fade, align );
 	}
 	tempx += INFO_PLAYER_WIDTH;
 
-	CG_FillRect( tempx, y, INFO_SCORE_WIDTH - INFO_BORDER, INFO_TEAM_HEIGHT, hcolor );
+	CG_FillRect( tempx, y, INFO_SCORE_WIDTH - INFO_BORDER, INFO_TEAM_HEIGHT, hcolor, align );
 	tempx += INFO_SCORE_WIDTH;
 
-	CG_FillRect( tempx, y, INFO_LATENCY_WIDTH - INFO_BORDER, INFO_TEAM_HEIGHT, hcolor );
+	CG_FillRect( tempx, y, INFO_LATENCY_WIDTH - INFO_BORDER, INFO_TEAM_HEIGHT, hcolor, align );
 	tempx += INFO_LATENCY_WIDTH;
 
 	// draw player info
@@ -279,7 +279,7 @@ static int WM_TeamScoreboard( int x, int y, team_t team, float fade ) {
 			continue;
 		}
 
-		WM_DrawClientScore( x, y, &cg.scores[i], hcolor, fade );
+		WM_DrawClientScore( x, y, &cg.scores[i], hcolor, fade, align );
 		y += SMALLCHAR_HEIGHT;
 	}
 
@@ -293,7 +293,7 @@ static int WM_TeamScoreboard( int x, int y, team_t team, float fade ) {
 WM_DrawObjectives
 =================
 */
-int WM_DrawObjectives( int x, int y, int width, float fade ) {
+int WM_DrawObjectives( int x, int y, int width, float fade, scralign_t align ) {
 	const char *s, *buf, *str;
 	char teamstr[32];
 	int i, num, strwidth, status;
@@ -320,17 +320,17 @@ int WM_DrawObjectives( int x, int y, int width, float fade ) {
 			// draw text
 			str = va( "%s", buf );
 			strwidth = CG_DrawStrlen( str ) * SMALLCHAR_WIDTH;
-			CG_DrawSmallString( x + width / 2 - strwidth / 2 - 12, y, str, fade );
+			CG_DrawSmallString( x + width / 2 - strwidth / 2 - 12, y, str, fade, align );
 
 			// draw status flags
 			status = atoi( Info_ValueForKey( s, "status" ) );
 
 			if ( status == 0 ) {
-				CG_DrawPic( x + width / 2 - strwidth / 2 - 16 - 24, y, 24, 16, trap_R_RegisterShaderNoMip( "ui/assets/ger_flag.tga" ) );
-				CG_DrawPic( x + width / 2 + strwidth / 2 - 12 + 4, y, 24, 16, trap_R_RegisterShaderNoMip( "ui/assets/ger_flag.tga" ) );
+				CG_DrawPic( x + width / 2 - strwidth / 2 - 16 - 24, y, 24, 16, trap_R_RegisterShaderNoMip( "ui/assets/ger_flag.tga" ), align );
+				CG_DrawPic( x + width / 2 + strwidth / 2 - 12 + 4, y, 24, 16, trap_R_RegisterShaderNoMip( "ui/assets/ger_flag.tga" ), align );
 			} else if ( status == 1 )   {
-				CG_DrawPic( x + width / 2 - strwidth / 2 - 16 - 24, y, 24, 16, trap_R_RegisterShaderNoMip( "ui/assets/usa_flag.tga" ) );
-				CG_DrawPic( x + width / 2 + strwidth / 2 - 12 + 4, y, 24, 16, trap_R_RegisterShaderNoMip( "ui/assets/usa_flag.tga" ) );
+				CG_DrawPic( x + width / 2 - strwidth / 2 - 16 - 24, y, 24, 16, trap_R_RegisterShaderNoMip( "ui/assets/usa_flag.tga" ), align );
+				CG_DrawPic( x + width / 2 + strwidth / 2 - 12 + 4, y, 24, 16, trap_R_RegisterShaderNoMip( "ui/assets/usa_flag.tga" ), align );
 			}
 
 			y += 16;
@@ -345,7 +345,7 @@ int WM_DrawObjectives( int x, int y, int width, float fade ) {
 WM_ScoreboardOverlay
 =================
 */
-int WM_ScoreboardOverlay( int x, int y, float fade ) {
+int WM_ScoreboardOverlay( int x, int y, float fade, scralign_t align ) {
 	vec4_t hcolor;
 	int width;
 	char        *s; // JPW NERVE
@@ -357,13 +357,13 @@ int WM_ScoreboardOverlay( int x, int y, float fade ) {
 	hcolor[3] = 0.7 * fade;
 
 	// draw background
-	CG_FillRect( x - 12, y, width, 400, hcolor );
+	CG_FillRect( x - 12, y, width, 400, hcolor, align );
 
 	// draw title frame
 	VectorSet( hcolor, 0.0039, 0.0039, 0.2461 );
 	hcolor[3] = 1 * fade;
-	CG_FillRect( x - 12, y, width, 30, hcolor );
-	CG_DrawRect( x - 12, y, width, 400, 2, hcolor );
+	CG_FillRect( x - 12, y, width, 30, hcolor, align );
+	CG_DrawRect( x - 12, y, width, 400, 2, hcolor, align );
 
 	if ( cg.snap->ps.pm_type == PM_INTERMISSION ) {
 		const char *s, *buf;
@@ -372,9 +372,9 @@ int WM_ScoreboardOverlay( int x, int y, float fade ) {
 		buf = Info_ValueForKey( s, "winner" );
 
 		if ( atoi( buf ) ) {
-			CG_DrawSmallString( x - 12 + 5, y, "ALLIES WIN!", fade );
+			CG_DrawSmallString( x - 12 + 5, y, "ALLIES WIN!", fade, align );
 		} else {
-			CG_DrawSmallString( x - 12 + 5, y, "AXIS WIN!", fade );
+			CG_DrawSmallString( x - 12 + 5, y, "AXIS WIN!", fade, align );
 		}
 	}
 // JPW NERVE -- mission time & reinforce time
@@ -388,7 +388,7 @@ int WM_ScoreboardOverlay( int x, int y, float fade ) {
 		seconds -= tens * 10;
 
 		s = va( "Mission time:   %2.0f:%i%i", (float)mins, tens, seconds ); // float cast to line up with reinforce time
-		CG_DrawSmallString( x - 7,y,s,fade );
+		CG_DrawSmallString( x - 7, y, s, fade, align );
 
 		if ( cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_RED ) {
 			msec = cg_redlimbotime.integer - ( cg.time % cg_redlimbotime.integer );
@@ -406,23 +406,23 @@ int WM_ScoreboardOverlay( int x, int y, float fade ) {
 			seconds -= tens * 10;
 
 			s = va( "Reinforce time: %2.0f:%i%i", (float)mins, tens, seconds );
-			CG_DrawSmallString( x - 7,y + 16,s,fade );
+			CG_DrawSmallString( x - 7, y + 16, s, fade, align );
 		}
 	}
 // jpw
 //	CG_DrawSmallString( x - 12 + 5, y, "Wolfenstein Multiplayer", fade ); // old one
 
-	y = WM_DrawObjectives( x, y, width, fade );
+	y = WM_DrawObjectives( x, y, width, fade, align );
 	y += 5;
 
 	// draw field names
-	CG_DrawSmallString( x, y, "Players", fade );
+	CG_DrawSmallString( x, y, "Players", fade, align );
 	x += INFO_PLAYER_WIDTH;
 
-	CG_DrawSmallString( x, y, "Score", fade );
+	CG_DrawSmallString( x, y, "Score", fade, align );
 	x += INFO_SCORE_WIDTH;
 
-	CG_DrawSmallString( x, y, "Latency", fade );
+	CG_DrawSmallString( x, y, "Latency", fade, align );
 	x += INFO_LATENCY_WIDTH;
 
 	y += 20;
@@ -439,8 +439,8 @@ Draw the normal in-game scoreboard
 =================
 */
 qboolean CG_DrawScoreboard( void ) {
-	int x = 0, y = 0, w;     // TTimo init
-	float fade;
+	int		x = 0, y = 0, w;     // TTimo init
+	float	fade;
 	float   *fadeColor;
 	char    *s;
 
@@ -488,7 +488,7 @@ qboolean CG_DrawScoreboard( void ) {
 		w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
 		x = ( SCREEN_WIDTH - w ) / 2;
 		y = 40;
-		CG_DrawBigString( x, y, s, fade );
+		CG_DrawBigString( x, y, s, fade, ALIGN_TOP );
 	}
 
 	// current rank
@@ -503,7 +503,7 @@ qboolean CG_DrawScoreboard( void ) {
 				w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
 				x = ( SCREEN_WIDTH - w ) / 2;
 				y = 60;
-				CG_DrawBigString( x, y, s, fade );
+				CG_DrawBigString( x, y, s, fade, ALIGN_TOP );
 			} else {
 				if ( cg.teamScores[0] == cg.teamScores[1] ) {
 					s = va( "Teams are tied at %i", cg.teamScores[0] );
@@ -516,7 +516,7 @@ qboolean CG_DrawScoreboard( void ) {
 				w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
 				x = ( SCREEN_WIDTH - w ) / 2;
 				y = 60;
-				CG_DrawBigString( x, y, s, fade );
+				CG_DrawBigString( x, y, s, fade, ALIGN_TOP );
 			}
 		}
 
@@ -528,10 +528,10 @@ qboolean CG_DrawScoreboard( void ) {
 		CG_DrawBigStringColor( x, y, "SCORE PING TIME NAME", fadeColor );
 		CG_DrawBigStringColor( x, y + 12, "----- ---- ---- ---------------", fadeColor );
 	#endif
-		CG_DrawPic( x + 1 * 16, y, 64, 32, cgs.media.scoreboardScore );
-		CG_DrawPic( x + 6 * 16 + 8, y, 64, 32, cgs.media.scoreboardPing );
-		CG_DrawPic( x + 11 * 16 + 8, y, 64, 32, cgs.media.scoreboardTime );
-		CG_DrawPic( x + 16 * 16, y, 64, 32, cgs.media.scoreboardName );
+		CG_DrawPic( x + 1 * 16, y, 64, 32, cgs.media.scoreboardScore, ALIGN_TOP );
+		CG_DrawPic( x + 6 * 16 + 8, y, 64, 32, cgs.media.scoreboardPing, ALIGN_TOP );
+		CG_DrawPic( x + 11 * 16 + 8, y, 64, 32, cgs.media.scoreboardTime, ALIGN_TOP );
+		CG_DrawPic( x + 16 * 16, y, 64, 32, cgs.media.scoreboardName, ALIGN_TOP );
 
 		y += 32;
 	}
@@ -544,16 +544,16 @@ qboolean CG_DrawScoreboard( void ) {
 		x = 320 - SCOREBOARD_WIDTH / 2 + 20 + 20;
 		y = 40;
 
-		y = WM_ScoreboardOverlay( x, y, fade );
+		y = WM_ScoreboardOverlay( x, y, fade, ALIGN_TOP );
 
 		if ( cg.teamScores[0] >= cg.teamScores[1] ) {
-			y = WM_TeamScoreboard( x, y, TEAM_RED, fade );
-			y = WM_TeamScoreboard( x, y, TEAM_BLUE, fade );
+			y = WM_TeamScoreboard( x, y, TEAM_RED, fade, ALIGN_TOP );
+			y = WM_TeamScoreboard( x, y, TEAM_BLUE, fade, ALIGN_TOP );
 		} else {
-			y = WM_TeamScoreboard( x, y, TEAM_BLUE, fade );
-			y = WM_TeamScoreboard( x, y, TEAM_RED, fade );
+			y = WM_TeamScoreboard( x, y, TEAM_BLUE, fade, ALIGN_TOP );
+			y = WM_TeamScoreboard( x, y, TEAM_RED, fade, ALIGN_TOP );
 		}
-		y = WM_TeamScoreboard( x, y, TEAM_SPECTATOR, fade );
+		y = WM_TeamScoreboard( x, y, TEAM_SPECTATOR, fade, ALIGN_TOP );
 	}
 	// -NERVE - SMF
 	else if ( cgs.gametype >= GT_TEAM ) {
@@ -561,20 +561,20 @@ qboolean CG_DrawScoreboard( void ) {
 		// teamplay scoreboard
 		//
 		if ( cg.teamScores[0] >= cg.teamScores[1] ) {
-			y = CG_TeamScoreboard( x, y, TEAM_RED, fade );
-			y = CG_TeamScoreboard( x, y, TEAM_BLUE, fade );
+			y = CG_TeamScoreboard( x, y, TEAM_RED, fade, ALIGN_TOP );
+			y = CG_TeamScoreboard( x, y, TEAM_BLUE, fade, ALIGN_TOP );
 		} else {
-			y = CG_TeamScoreboard( x, y, TEAM_BLUE, fade );
-			y = CG_TeamScoreboard( x, y, TEAM_RED, fade );
+			y = CG_TeamScoreboard( x, y, TEAM_BLUE, fade, ALIGN_TOP );
+			y = CG_TeamScoreboard( x, y, TEAM_RED, fade, ALIGN_TOP );
 		}
-		y = CG_TeamScoreboard( x, y, TEAM_SPECTATOR, fade );
+		y = CG_TeamScoreboard( x, y, TEAM_SPECTATOR, fade, ALIGN_TOP );
 
 	} else if ( cgs.gametype != GT_SINGLE_PLAYER ) {   //----(SA) modified
 		//
 		// free for all scoreboard
 		//
-		y = CG_TeamScoreboard( x, y, TEAM_FREE, fade );
-		y = CG_TeamScoreboard( x, y, TEAM_SPECTATOR, fade );
+		y = CG_TeamScoreboard( x, y, TEAM_FREE, fade, ALIGN_TOP );
+		y = CG_TeamScoreboard( x, y, TEAM_SPECTATOR, fade, ALIGN_TOP );
 	}
 
 	// load any models that have been deferred
@@ -593,8 +593,8 @@ CG_CenterGiantLine
 ================
 */
 static void CG_CenterGiantLine( float y, const char *string ) {
-	float x;
-	vec4_t color;
+	float	x;
+	vec4_t	color;
 
 	color[0] = 1;
 	color[1] = 1;
@@ -603,7 +603,7 @@ static void CG_CenterGiantLine( float y, const char *string ) {
 
 	x = 0.5 * ( 640 - GIANT_WIDTH * CG_DrawStrlen( string ) );
 
-	CG_DrawStringExt( x, y, string, color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0 );
+	CG_DrawStringExt( x, y, string, color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0, ALIGN_CENTER );
 }
 
 /*
@@ -635,7 +635,7 @@ void CG_DrawTourneyScoreboard( void ) {
 	// draw the dialog background
 	color[0] = color[1] = color[2] = 0;
 	color[3] = 1;
-	CG_FillRect( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, color );
+	CG_FillRect( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, color, ALIGN_STRETCH );
 
 	// print the mesage of the day
 	s = CG_ConfigString( CS_MOTD );
@@ -664,15 +664,15 @@ void CG_DrawTourneyScoreboard( void ) {
 		//
 		// teamplay scoreboard
 		//
-		CG_DrawStringExt( 8, y, "Red Team", color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0 );
+		CG_DrawStringExt( 8, y, "Red Team", color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0, ALIGN_TOPLEFT );
 		s = va( "%i", cg.teamScores[0] );
-		CG_DrawStringExt( 632 - GIANT_WIDTH * strlen( s ), y, s, color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0 );
+		CG_DrawStringExt( 632 - GIANT_WIDTH * strlen( s ), y, s, color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0, ALIGN_TOPRIGHT );
 
 		y += 64;
 
-		CG_DrawStringExt( 8, y, "Blue Team", color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0 );
+		CG_DrawStringExt( 8, y, "Blue Team", color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0, ALIGN_TOPLEFT );
 		s = va( "%i", cg.teamScores[1] );
-		CG_DrawStringExt( 632 - GIANT_WIDTH * strlen( s ), y, s, color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0 );
+		CG_DrawStringExt( 632 - GIANT_WIDTH * strlen( s ), y, s, color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0, ALIGN_TOPRIGHT );
 	} else {
 		//
 		// free for all scoreboard
@@ -686,9 +686,9 @@ void CG_DrawTourneyScoreboard( void ) {
 				continue;
 			}
 
-			CG_DrawStringExt( 8, y, ci->name, color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0 );
+			CG_DrawStringExt( 8, y, ci->name, color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0, ALIGN_TOPLEFT );
 			s = va( "%i", ci->score );
-			CG_DrawStringExt( 632 - GIANT_WIDTH * strlen( s ), y, s, color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0 );
+			CG_DrawStringExt( 632 - GIANT_WIDTH * strlen( s ), y, s, color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0, ALIGN_TOPRIGHT );
 			y += 64;
 		}
 	}

@@ -30,6 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 
 
 #include "g_local.h"
+#include "km_cvar.h"	// Knightmare added
 
 level_locals_t level;
 
@@ -140,6 +141,76 @@ vmCvar_t g_soldierChargeTime;
 
 vmCvar_t g_playerStart;         // set when the player enters the game
 
+// Knightmare- game balancing cvars
+vmCvar_t		sk_rot_health;
+vmCvar_t		sk_rot_armor;
+vmCvar_t		sk_brandy_ignore_max_health;
+vmCvar_t		sk_dropped_weapon_min_ammo;
+
+vmCvar_t		sk_max_mega_health;
+vmCvar_t		sk_max_armor;
+vmCvar_t		sk_max_9mm;
+vmCvar_t		sk_max_45cal;
+vmCvar_t		sk_max_792mm;
+vmCvar_t		sk_max_30cal;
+vmCvar_t		sk_max_127mm;
+vmCvar_t		sk_max_pf_rockets;
+vmCvar_t		sk_max_fuel;
+vmCvar_t		sk_max_cells;
+vmCvar_t		sk_max_grenades;
+vmCvar_t		sk_max_pineapples;
+vmCvar_t		sk_max_dynamite;
+
+vmCvar_t		sk_plr_dmg_knife;
+vmCvar_t		sk_plr_dmg_kick;
+vmCvar_t		sk_plr_dmg_luger;
+vmCvar_t		sk_plr_dmg_colt;
+vmCvar_t		sk_plr_dmg_mp40;
+vmCvar_t		sk_plr_dmg_thompson;
+vmCvar_t		sk_plr_dmg_sten;
+vmCvar_t		sk_plr_dmg_mauser;
+vmCvar_t		sk_plr_dmg_sniperrifle;
+vmCvar_t		sk_plr_dmg_garand;
+vmCvar_t		sk_plr_dmg_snooperscope;
+vmCvar_t		sk_plr_dmg_fg42;
+vmCvar_t		sk_plr_dmg_fg42scope;
+vmCvar_t		sk_plr_dmg_panzerfaust;
+vmCvar_t		sk_plr_dmg_panzerfaust_splash;
+vmCvar_t		sk_plr_dmg_venom;
+vmCvar_t		sk_plr_dmg_flamethrower;
+vmCvar_t		sk_plr_dmg_tesla;
+vmCvar_t		sk_plr_dmg_grenade;
+vmCvar_t		sk_plr_dmg_grenade_radius;
+vmCvar_t		sk_plr_dmg_pineapple;
+vmCvar_t		sk_plr_dmg_pineapple_radius;
+vmCvar_t		sk_plr_dmg_dynamite;
+vmCvar_t		sk_plr_dmg_dynamite_radius;
+
+vmCvar_t		sk_ai_dmg_knife;
+vmCvar_t		sk_ai_dmg_luger;
+vmCvar_t		sk_ai_dmg_colt;
+vmCvar_t		sk_ai_dmg_mp40;
+vmCvar_t		sk_ai_dmg_thompson;
+vmCvar_t		sk_ai_dmg_sten;
+vmCvar_t		sk_ai_dmg_mauser;
+vmCvar_t		sk_ai_dmg_sniperrifle;
+vmCvar_t		sk_ai_dmg_garand;
+vmCvar_t		sk_ai_dmg_snooperscope;
+vmCvar_t		sk_ai_dmg_fg42;
+vmCvar_t		sk_ai_dmg_fg42scope;
+vmCvar_t		sk_ai_dmg_panzerfaust;
+vmCvar_t		sk_ai_dmg_panzerfaust_splash;
+vmCvar_t		sk_ai_dmg_venom;
+vmCvar_t		sk_ai_dmg_flamethrower;
+vmCvar_t		sk_ai_dmg_tesla;
+vmCvar_t		sk_ai_dmg_grenade;
+vmCvar_t		sk_ai_dmg_grenade_radius;
+vmCvar_t		sk_ai_dmg_pineapple;
+vmCvar_t		sk_ai_dmg_pineapple_radius;
+vmCvar_t		sk_ai_dmg_dynamite;
+vmCvar_t		sk_ai_dmg_dynamite_radius;
+// end Knightmare
+
 cvarTable_t gameCvarTable[] = {
 	// don't override the cheat state set by the system
 	{ &g_cheats, "sv_cheats", "", 0, qfalse },
@@ -156,6 +227,76 @@ cvarTable_t gameCvarTable[] = {
 	// Rafael gameskill
 	{ &g_gameskill, "g_gameskill", "2", CVAR_SERVERINFO | CVAR_LATCH, 0, qfalse  },   // (SA) new default '2' (was '1')
 	// done
+
+	// Knightmare- game balancing cvars
+	{ &sk_rot_health, "sk_rot_health", "0", 0, 0, qfalse  },
+	{ &sk_rot_armor, "sk_rot_armor", "0", 0, 0, qfalse  },
+	{ &sk_brandy_ignore_max_health, "sk_brandy_ignore_max_health", "0", 0, 0, qfalse  },
+	{ &sk_dropped_weapon_min_ammo, "sk_dropped_weapon_min_ammo", "0.25", 0, 0, qfalse  },
+
+	{ &sk_max_mega_health, "sk_max_mega_health", "200", 0, 0, qfalse  },
+	{ &sk_max_armor, "sk_max_armor", "100", 0, 0, qfalse  },
+	{ &sk_max_9mm, "sk_max_9mm", "300", 0, 0, qfalse  },
+	{ &sk_max_45cal, "sk_max_45cal", "300", 0, 0, qfalse  },
+	{ &sk_max_792mm, "sk_max_792mm", "200", 0, 0, qfalse  },
+	{ &sk_max_30cal, "sk_max_30cal", "20", 0, 0, qfalse  },
+	{ &sk_max_127mm, "sk_max_127mm", "1000", 0, 0, qfalse  },
+	{ &sk_max_pf_rockets, "sk_max_pf_rockets", "5", 0, 0, qfalse  },
+	{ &sk_max_fuel, "sk_max_fuel", "150", 0, 0, qfalse  },
+	{ &sk_max_cells, "sk_max_cells", "300", 0, 0, qfalse  },
+	{ &sk_max_grenades, "sk_max_grenades", "15", 0, 0, qfalse  },
+	{ &sk_max_pineapples, "sk_max_pineapples", "15", 0, 0, qfalse  },
+	{ &sk_max_dynamite, "sk_max_dynamite", "10", 0, 0, qfalse  },
+
+	{ &sk_plr_dmg_knife, "sk_plr_dmg_knife", "5", 0, 0, qfalse  },
+	{ &sk_plr_dmg_kick, "sk_plr_dmg_kick", "15", 0, 0, qfalse  },
+	{ &sk_plr_dmg_luger, "sk_plr_dmg_luger", "6", 0, 0, qfalse  },
+	{ &sk_plr_dmg_colt, "sk_plr_dmg_colt", "8", 0, 0, qfalse  },
+	{ &sk_plr_dmg_mp40, "sk_plr_dmg_mp40", "6", 0, 0, qfalse  },
+	{ &sk_plr_dmg_thompson, "sk_plr_dmg_thompson", "8", 0, 0, qfalse  },
+	{ &sk_plr_dmg_sten, "sk_plr_dmg_sten", "10", 0, 0, qfalse  },
+	{ &sk_plr_dmg_mauser, "sk_plr_dmg_mauser", "20", 0, 0, qfalse  },
+	{ &sk_plr_dmg_sniperrifle, "sk_plr_dmg_sniperrifle", "55", 0, 0, qfalse  },
+	{ &sk_plr_dmg_garand, "sk_plr_dmg_garand", "25", 0, 0, qfalse  },
+	{ &sk_plr_dmg_snooperscope, "sk_plr_dmg_snooperscope", "25", 0, 0, qfalse  },
+	{ &sk_plr_dmg_fg42, "sk_plr_dmg_fg42", "20", 0, 0, qfalse  },
+	{ &sk_plr_dmg_fg42scope, "sk_plr_dmg_fg42scope", "35", 0, 0, qfalse  },
+	{ &sk_plr_dmg_panzerfaust, "sk_plr_dmg_panzerfaust", "200", 0, 0, qfalse  },
+	{ &sk_plr_dmg_panzerfaust_splash, "sk_plr_dmg_panzerfaust_splash", "200", 0, 0, qfalse  },
+	{ &sk_plr_dmg_venom, "sk_plr_dmg_venom", "12", 0, 0, qfalse  },
+	{ &sk_plr_dmg_flamethrower, "sk_plr_dmg_flamethrower", "2", 0, 0, qfalse  },
+	{ &sk_plr_dmg_tesla, "sk_plr_dmg_tesla", "8", 0, 0, qfalse  },
+	{ &sk_plr_dmg_grenade, "sk_plr_dmg_grenade", "200", 0, 0, qfalse  },
+	{ &sk_plr_dmg_grenade_radius, "sk_plr_dmg_grenade_radius", "150", 0, 0, qfalse  },
+	{ &sk_plr_dmg_pineapple, "sk_plr_dmg_pineapple", "160", 0, 0, qfalse  },
+	{ &sk_plr_dmg_pineapple_radius, "sk_plr_dmg_pineapple_radius", "300", 0, 0, qfalse  },
+	{ &sk_plr_dmg_dynamite, "sk_plr_dmg_dynamite", "800", 0, 0, qfalse  },
+	{ &sk_plr_dmg_dynamite_radius, "sk_plr_dmg_dynamite_radius", "400", 0, 0, qfalse  },
+
+	{ &sk_ai_dmg_knife, "sk_ai_dmg_knife", "5", 0, 0, qfalse  },
+	{ &sk_ai_dmg_luger, "sk_ai_dmg_luger", "6", 0, 0, qfalse  },
+	{ &sk_ai_dmg_colt, "sk_ai_dmg_colt", "8", 0, 0, qfalse  },
+	{ &sk_ai_dmg_mp40, "sk_ai_dmg_mp40", "6", 0, 0, qfalse  },
+	{ &sk_ai_dmg_thompson, "sk_ai_dmg_thompson", "8", 0, 0, qfalse  },
+	{ &sk_ai_dmg_sten, "sk_ai_dmg_sten", "8", 0, 0, qfalse  },
+	{ &sk_ai_dmg_mauser, "sk_ai_dmg_mauser", "20", 0, 0, qfalse  },
+	{ &sk_ai_dmg_sniperrifle, "sk_ai_dmg_sniperrifle", "50", 0, 0, qfalse  },
+	{ &sk_ai_dmg_garand, "sk_ai_dmg_garand", "20", 0, 0, qfalse  },
+	{ &sk_ai_dmg_snooperscope, "sk_ai_dmg_snooperscope", "25", 0, 0, qfalse  },
+	{ &sk_ai_dmg_fg42, "sk_ai_dmg_fg42", "15", 0, 0, qfalse  },
+	{ &sk_ai_dmg_fg42scope, "sk_ai_dmg_fg42scope", "15", 0, 0, qfalse  },
+	{ &sk_ai_dmg_panzerfaust, "sk_ai_dmg_panzerfaust", "100", 0, 0, qfalse  },
+	{ &sk_ai_dmg_panzerfaust_splash, "sk_ai_dmg_panzerfaust_splash", "120", 0, 0, qfalse  },
+	{ &sk_ai_dmg_venom, "sk_ai_dmg_venom", "10", 0, 0, qfalse  },
+	{ &sk_ai_dmg_flamethrower, "sk_ai_dmg_flamethrower", "1", 0, 0, qfalse  },
+	{ &sk_ai_dmg_tesla, "sk_ai_dmg_tesla", "4", 0, 0, qfalse  },
+	{ &sk_ai_dmg_grenade, "sk_ai_dmg_grenade", "100", 0, 0, qfalse  },
+	{ &sk_ai_dmg_grenade_radius, "sk_ai_dmg_grenade_radius", "150", 0, 0, qfalse  },
+	{ &sk_ai_dmg_pineapple, "sk_ai_dmg_pineapple", "80", 0, 0, qfalse  },
+	{ &sk_ai_dmg_pineapple_radius, "sk_ai_dmg_pineapple_radius", "300", 0, 0, qfalse  },
+	{ &sk_ai_dmg_dynamite, "sk_ai_dmg_dynamite", "400", 0, 0, qfalse  },
+	{ &sk_ai_dmg_dynamite_radius, "sk_ai_dmg_dynamite_radius", "400", 0, 0, qfalse  },
+	// end Knightmare
 
 	{ &g_reloading, "g_reloading", "0", CVAR_ROM },   //----(SA)	added
 
@@ -336,7 +477,8 @@ void QDECL G_Printf( const char *fmt, ... ) {
 	char text[1024];
 
 	va_start( argptr, fmt );
-	vsprintf( text, fmt, argptr );
+//	vsprintf( text, fmt, argptr );
+	Q_vsnprintf( text, sizeof(text), fmt, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	trap_Printf( text );
@@ -351,7 +493,8 @@ void QDECL G_DPrintf( const char *fmt, ... ) {
 	}
 
 	va_start( argptr, fmt );
-	vsprintf( text, fmt, argptr );
+//	vsprintf( text, fmt, argptr );
+	Q_vsnprintf( text, sizeof(text), fmt, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	trap_Printf( text );
@@ -362,7 +505,8 @@ void QDECL G_Error( const char *fmt, ... ) {
 	char text[1024];
 
 	va_start( argptr, fmt );
-	vsprintf( text, fmt, argptr );
+//	vsprintf( text, fmt, argptr );
+	Q_vsnprintf( text, sizeof(text), fmt, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	trap_Error( text );
@@ -377,6 +521,7 @@ qboolean G_canStealthStab( int aiChar ) {
 	case AICHAR_ELITEGUARD:
 	case AICHAR_BLACKGUARD:
 	case AICHAR_PARTISAN:
+	case AICHAR_RUSSIAN:	// Knightmare added
 	case AICHAR_CIVILIAN:
 		return qtrue;
 	}
@@ -680,6 +825,7 @@ void G_CheckForCursorHints( gentity_t *ent ) {
 			} else if ( checkEnt->s.eType == ET_ALARMBOX )      {
 				if ( checkEnt->health > 0 ) {
 //					hintDist	= CH_BREAKABLE_DIST;
+					hintDist	= CH_ACTIVATE_DIST;	// Knightmare added, fixes too long hint dist on alarm boxes
 					hintType    = HINT_ACTIVATE;
 				}
 			} else if ( checkEnt->s.eType == ET_ITEM )      {
@@ -1201,6 +1347,9 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 
 	G_InitMemory();
 
+	// Knightmare- init max ammo here
+	BG_InitAmmoTable();
+
 	// set some level globals
 	memset( &level, 0, sizeof( level ) );
 	level.time = levelTime;
@@ -1394,7 +1543,8 @@ void QDECL Com_Error( int level, const char *error, ... ) {
 	char text[1024];
 
 	va_start( argptr, error );
-	vsprintf( text, error, argptr );
+//	vsprintf( text, error, argptr );
+	Q_vsnprintf( text, sizeof(text), error, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	G_Error( "%s", text );
@@ -1405,7 +1555,8 @@ void QDECL Com_Printf( const char *msg, ... ) {
 	char text[1024];
 
 	va_start( argptr, msg );
-	vsprintf( text, msg, argptr );
+//	vsprintf( text, msg, argptr );
+	Q_vsnprintf( text, sizeof(text), msg, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	G_Printf( "%s", text );
@@ -1916,7 +2067,8 @@ void QDECL G_LogPrintf( const char *fmt, ... ) {
 	Com_sprintf( string, sizeof( string ), "%3i:%i%i ", min, tens, sec );
 
 	va_start( argptr, fmt );
-	vsprintf( string + 7, fmt,argptr );
+//	vsprintf( string + 7, fmt,argptr );
+	Q_vsnprintf( string + 7, sizeof(string)-7, fmt, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	if ( g_dedicated.integer ) {

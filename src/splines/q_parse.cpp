@@ -29,6 +29,7 @@ If you have questions concerning this license or the applicable additional terms
 // q_parse.c -- support for parsing text files
 
 #include "q_splineshared.h"
+#include "util_str.h"
 
 /*
 ============================================================================
@@ -107,7 +108,8 @@ void Com_ScriptError( const char *msg, ... ) {
 	char string[32000];
 
 	va_start( argptr, msg );
-	vsprintf( string, msg,argptr );
+//	vsprintf( string, msg, argptr );
+	Q_vsnprintf( string, sizeof(string), msg, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	Com_Error( ERR_DROP, "File %s, line %i: %s", pi->parseFile, pi->lines, string );
@@ -118,7 +120,8 @@ void Com_ScriptWarning( const char *msg, ... ) {
 	char string[32000];
 
 	va_start( argptr, msg );
-	vsprintf( string, msg,argptr );
+//	vsprintf( string, msg, argptr );
+	Q_vsnprintf( string, sizeof(string), msg, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	Com_Printf( "File %s, line %i: %s", pi->parseFile, pi->lines, string );

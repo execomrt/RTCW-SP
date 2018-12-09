@@ -39,6 +39,7 @@ If you have questions concerning this license or the applicable additional terms
 */
 
 #include "g_local.h"
+#include "km_cvar.h"	// Knightmare added
 
 
 
@@ -88,7 +89,7 @@ int Pickup_Powerup( gentity_t *ent, gentity_t *other ) {
 	if ( ent->item->giTag == PW_NOFATIGUE ) {
 		if ( Q_stricmp( ent->item->classname, "item_stamina_brandy" ) == 0 ) {
 			other->health += 10;
-			if ( other->health > other->client->ps.stats[STAT_MAX_HEALTH] ) {
+			if ( !sk_brandy_ignore_max_health.value && other->health > other->client->ps.stats[STAT_MAX_HEALTH] ) {	// Knightmare- added option
 				other->health = other->client->ps.stats[STAT_MAX_HEALTH];
 			}
 			other->client->ps.stats[STAT_HEALTH] = other->health;
@@ -217,6 +218,9 @@ UseHoldableItem
 void UseHoldableItem( gentity_t *ent, int item ) {
 	switch ( item ) {
 	case HI_WINE:           // 1921 Chateu Lafite - gives 25 pts health up to max health
+		// Knightmare- If over 100 health, do nothing.
+		if (ent->health >= ent->client->ps.stats[STAT_MAX_HEALTH])
+			break;
 		ent->health += 25;
 		if ( ent->health > ent->client->ps.stats[STAT_MAX_HEALTH] ) {
 			ent->health = ent->client->ps.stats[STAT_MAX_HEALTH];
@@ -344,14 +348,15 @@ void Add_Ammo( gentity_t *ent, int weapon, int count, qboolean fillClip ) {
 		noPack = qfalse;    // let AI's deal with their own clip/ammo handling
 
 	}
+
 	// cap to max ammo
 	if ( noPack ) {
 		ent->client->ps.ammo[ammoweap] = 0;
-	} else {
+	}
+	else {
 		if ( ent->client->ps.ammo[ammoweap] > ammoTable[ammoweap].maxammo ) {
 			ent->client->ps.ammo[ammoweap] = ammoTable[ammoweap].maxammo;
 		}
-
 		if ( count >= 999 ) { // 'really, give /all/'
 			ent->client->ps.ammo[ammoweap] = count;
 		}
@@ -409,15 +414,28 @@ int Pickup_Weapon( gentity_t *ent, gentity_t *other ) {
 
 	if ( ent->count < 0 ) {
 		quantity = 0; // None for you, sir!
-	} else {
+	}
+	else {
 		if ( ent->count ) {
 			quantity = ent->count;
-		} else {
+		}
+		else {
 //----(SA) modified
 //			quantity = ent->item->quantity;
 //			quantity = (random() * (ent->item->quantity - 1)) + 1;	// giving 1-<item default count>
-			quantity = ( random() * ( ammoTable[weapon].maxclip - 4 ) ) + 4;    // giving 4-<item default count>
 
+			// Knightmare- since clip size of flamethrower and tesla is max ammo, don't give nearly that much
+			// instead, base it on original ammo maximum
+			// also added min dropped weapon ammo var
+			if (weapon == WP_FLAMETHROWER)
+				quantity = 150 * sk_dropped_weapon_min_ammo.value + (random() * 150 * (1-sk_dropped_weapon_min_ammo.value));
+			else if (weapon == WP_TESLA)
+				quantity = 300 * sk_dropped_weapon_min_ammo.value + (random() * 300 * (1-sk_dropped_weapon_min_ammo.value));
+			else if (weapon == WP_PANZERFAUST)	// Knightmare- added special case for panzerfaust
+				quantity = ( random() * ( ammoTable[weapon].maxclip - 4 ) ) + 4;    // giving 4-<item default count>
+			else
+			//	quantity = ( random() * ( ammoTable[weapon].maxclip - 4 ) ) + 4;    // giving 4-<item default count>
+				quantity = ammoTable[weapon].maxclip * sk_dropped_weapon_min_ammo.value + (random() * ammoTable[weapon].maxclip * (1-sk_dropped_weapon_min_ammo.value));
 		}
 
 		// dropped items and teamplay weapons always have full ammo
@@ -503,7 +521,8 @@ int Pickup_Health( gentity_t *ent, gentity_t *other ) {
 	if ( ent->item->quantity != 5 && ent->item->quantity != 100  ) {
 		max = other->client->ps.stats[STAT_MAX_HEALTH];
 	} else {
-		max = other->client->ps.stats[STAT_MAX_HEALTH] * 2;
+	//	max = other->client->ps.stats[STAT_MAX_HEALTH] * 2;
+		max = sk_max_mega_health.integer;	// Knightmare changed, use variable
 	}
 
 	if ( ent->count ) {
@@ -551,8 +570,8 @@ int Pickup_Armor( gentity_t *ent, gentity_t *other ) {
 	other->client->ps.stats[STAT_ARMOR] += ent->item->quantity;
 //	if ( other->client->ps.stats[STAT_ARMOR] > other->client->ps.stats[STAT_MAX_HEALTH] * 2 ) {
 //		other->client->ps.stats[STAT_ARMOR] = other->client->ps.stats[STAT_MAX_HEALTH] * 2;
-	if ( other->client->ps.stats[STAT_ARMOR] > 100 ) {
-		other->client->ps.stats[STAT_ARMOR] = 100;
+	if ( other->client->ps.stats[STAT_ARMOR] > sk_max_armor.integer ) {	// Knightmare changed, use variable
+		other->client->ps.stats[STAT_ARMOR] = sk_max_armor.integer;
 	}
 
 	// single player has no respawns	(SA)

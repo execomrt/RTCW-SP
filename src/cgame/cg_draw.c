@@ -145,15 +145,15 @@ int CG_Text_Height( const char *text, int font, float scale, int limit ) {
 	return max * useScale;
 }
 
-void CG_Text_PaintChar( float x, float y, float width, float height, float scale, float s, float t, float s2, float t2, qhandle_t hShader ) {
+void CG_Text_PaintChar( float x, float y, float width, float height, float scale, float s, float t, float s2, float t2, qhandle_t hShader, scralign_t align ) {
 	float w, h;
 	w = width * scale;
 	h = height * scale;
-	CG_AdjustFrom640( &x, &y, &w, &h );
+	CG_AdjustFrom640( &x, &y, &w, &h, align, qfalse );
 	trap_R_DrawStretchPic( x, y, w, h, s, t, s2, t2, hShader );
 }
 
-void CG_Text_Paint( float x, float y, int font, float scale, vec4_t color, const char *text, float adjust, int limit, int style ) {
+void CG_Text_Paint( float x, float y, int font, float scale, vec4_t color, const char *text, float adjust, int limit, int style, scralign_t align ) {
 	int len, count;
 	vec4_t newColor;
 	glyphInfo_t *glyph;
@@ -211,7 +211,7 @@ void CG_Text_Paint( float x, float y, int font, float scale, vec4_t color, const
 									   glyph->t,
 									   glyph->s2,
 									   glyph->t2,
-									   glyph->glyph );
+									   glyph->glyph, align );
 					colorBlack[3] = 1.0;
 					trap_R_SetColor( newColor );
 				}
@@ -223,7 +223,7 @@ void CG_Text_Paint( float x, float y, int font, float scale, vec4_t color, const
 								   glyph->t,
 								   glyph->s2,
 								   glyph->t2,
-								   glyph->glyph );
+								   glyph->glyph, align );
 				// CG_DrawPic(x, y - yadj, scale * cgDC.Assets.textFont.glyphs[text[i]].imageWidth, scale * cgDC.Assets.textFont.glyphs[text[i]].imageHeight, cgDC.Assets.textFont.glyphs[text[i]].glyph);
 				x += ( glyph->xSkip * useScale ) + adjust;
 				s++;
@@ -308,7 +308,7 @@ CG_Draw3DModel
 
 ================
 */
-void CG_Draw3DModel( float x, float y, float w, float h, qhandle_t model, qhandle_t skin, vec3_t origin, vec3_t angles ) {
+void CG_Draw3DModel( float x, float y, float w, float h, qhandle_t model, qhandle_t skin, vec3_t origin, vec3_t angles, scralign_t align ) {
 	refdef_t refdef;
 	refEntity_t ent;
 
@@ -316,7 +316,7 @@ void CG_Draw3DModel( float x, float y, float w, float h, qhandle_t model, qhandl
 		return;
 	}
 
-	CG_AdjustFrom640( &x, &y, &w, &h );
+	CG_AdjustFrom640( &x, &y, &w, &h, align, qfalse );
 
 	memset( &refdef, 0, sizeof( refdef ) );
 
@@ -358,7 +358,7 @@ CG_DrawHead
 Used for both the status bar and the scoreboard
 ================
 */
-void CG_DrawHead( float x, float y, float w, float h, int clientNum, vec3_t headAngles ) {
+void CG_DrawHead( float x, float y, float w, float h, int clientNum, vec3_t headAngles, scralign_t align ) {
 	clipHandle_t cm;
 	clientInfo_t    *ci;
 	float len;
@@ -387,14 +387,14 @@ void CG_DrawHead( float x, float y, float w, float h, int clientNum, vec3_t head
 		// allow per-model tweaking
 		VectorAdd( origin, ci->modelInfo->headOffset, origin );
 
-		CG_Draw3DModel( x, y, w, h, ci->headModel, ci->headSkin, origin, headAngles );
+		CG_Draw3DModel( x, y, w, h, ci->headModel, ci->headSkin, origin, headAngles, align );
 //	} else if ( cg_drawIcons.integer ) {
 //		CG_DrawPic( x, y, w, h, ci->modelIcon );
 	}
 
 	// if they are deferred, draw a cross out
 	if ( ci->deferred ) {
-		CG_DrawPic( x, y, w, h, cgs.media.deferShader );
+		CG_DrawPic( x, y, w, h, cgs.media.deferShader, align );
 	}
 }
 
@@ -405,7 +405,7 @@ CG_DrawFlagModel
 Used for both the status bar and the scoreboard
 ================
 */
-void CG_DrawFlagModel( float x, float y, float w, float h, int team ) {
+void CG_DrawFlagModel( float x, float y, float w, float h, int team, scralign_t align ) {
 	qhandle_t cm;
 	float len;
 	vec3_t origin, angles;
@@ -430,7 +430,7 @@ void CG_DrawFlagModel( float x, float y, float w, float h, int team ) {
 
 	CG_Draw3DModel( x, y, w, h,
 					team == TEAM_RED ? cgs.media.redFlagModel : cgs.media.blueFlagModel,
-					0, origin, angles );
+					0, origin, angles, align );
 }
 
 
@@ -439,7 +439,7 @@ void CG_DrawFlagModel( float x, float y, float w, float h, int team ) {
 CG_DrawKeyModel
 ==============
 */
-void CG_DrawKeyModel( int keynum, float x, float y, float w, float h, int fadetime ) {
+void CG_DrawKeyModel( int keynum, float x, float y, float w, float h, int fadetime, scralign_t align ) {
 	qhandle_t cm;
 	float len;
 	vec3_t origin, angles;
@@ -461,7 +461,7 @@ void CG_DrawKeyModel( int keynum, float x, float y, float w, float h, int fadeti
 
 	angles[YAW] = 30 * sin( cg.time / 2000.0 );;
 
-	CG_Draw3DModel( x, y, w, h, cg_items[keynum].models[0], 0, origin, angles );
+	CG_Draw3DModel( x, y, w, h, cg_items[keynum].models[0], 0, origin, angles, align );
 }
 
 /*
@@ -588,7 +588,7 @@ CG_DrawTeamBackground
 
 ================
 */
-void CG_DrawTeamBackground( int x, int y, int w, int h, float alpha, int team ) {
+void CG_DrawTeamBackground( int x, int y, int w, int h, float alpha, int team, scralign_t align ) {
 	vec4_t hcolor;
 
 	hcolor[3] = alpha;
@@ -604,7 +604,7 @@ void CG_DrawTeamBackground( int x, int y, int w, int h, float alpha, int team ) 
 		return;
 	}
 	trap_R_SetColor( hcolor );
-	CG_DrawPic( x, y, w, h, cgs.media.teamStatusBar );
+	CG_DrawPic( x, y, w, h, cgs.media.teamStatusBar, align );
 	trap_R_SetColor( NULL );
 }
 
@@ -934,7 +934,7 @@ static float CG_DrawSnapshot( float y ) {
 			cg.latestSnapshotNum, cgs.serverCommandSequence );
 	w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
 
-	CG_DrawBigString( UPPERRIGHT_X - w, y + 2, s, 1.0F );
+	CG_DrawBigString( UPPERRIGHT_X - w, y + 2, s, 1.0F, ALIGN_TOPRIGHT );
 
 	return y + BIGCHAR_HEIGHT + 4;
 }
@@ -946,14 +946,14 @@ CG_DrawFPS
 */
 #define FPS_FRAMES  4
 static float CG_DrawFPS( float y ) {
-	char        *s;
-	int w;
-	static int previousTimes[FPS_FRAMES];
-	static int index;
-	int i, total;
-	int fps;
-	static int previous;
-	int t, frameTime;
+	char		*s;
+	int			w;
+	static int	previousTimes[FPS_FRAMES];
+	static int	index;
+	int			i, total;
+	int			fps;
+	static int	previous;
+	int			t, frameTime;
 
 	// don't use serverTime, because that will be drifting to
 	// correct for internet lag changes, timescales, timedemos, etc
@@ -977,7 +977,7 @@ static float CG_DrawFPS( float y ) {
 		s = va( "%ifps", fps );
 		w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
 
-		CG_DrawBigString( UPPERRIGHT_X - w, y + 2, s, 1.0F );
+		CG_DrawBigString( UPPERRIGHT_X - w, y + 2, s, 1.0F, ALIGN_TOPRIGHT );
 	}
 
 	return y + BIGCHAR_HEIGHT + 4;
@@ -989,10 +989,10 @@ CG_DrawTimer
 =================
 */
 static float CG_DrawTimer( float y ) {
-	char        *s;
-	int w;
-	int mins, seconds, tens;
-	int msec;
+	char	*s;
+	int		w;
+	int		mins, seconds, tens;
+	int		msec;
 
 	// NERVE - SMF - draw time remaining in multiplayer
 	if ( cgs.gametype == GT_WOLF ) {
@@ -1011,7 +1011,7 @@ static float CG_DrawTimer( float y ) {
 	s = va( "%i:%i%i", mins, tens, seconds );
 	w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
 
-	CG_DrawBigString( UPPERRIGHT_X - w, y + 2, s, 1.0F );
+	CG_DrawBigString( UPPERRIGHT_X - w, y + 2, s, 1.0F, ALIGN_TOPRIGHT );
 
 	return y + BIGCHAR_HEIGHT + 4;
 }
@@ -1120,7 +1120,7 @@ static float CG_DrawTeamOverlay( float y ) {
 		hcolor[3] = 0.33;
 	}
 	trap_R_SetColor( hcolor );
-	CG_DrawPic( x, y, w, h, cgs.media.teamStatusBar );
+	CG_DrawPic( x, y, w, h, cgs.media.teamStatusBar, ALIGN_CENTER );
 	trap_R_SetColor( NULL );
 
 
@@ -1134,7 +1134,7 @@ static float CG_DrawTeamOverlay( float y ) {
 
 			CG_DrawStringExt( xx, y,
 							  ci->name, hcolor, qfalse, qfalse,
-							  TINYCHAR_WIDTH, TINYCHAR_HEIGHT, TEAM_OVERLAY_MAXNAME_WIDTH );
+							  TINYCHAR_WIDTH, TINYCHAR_HEIGHT, TEAM_OVERLAY_MAXNAME_WIDTH, ALIGN_CENTER );
 
 			if ( lwidth ) {
 				p = CG_ConfigString( CS_LOCATIONS + ci->location );
@@ -1150,7 +1150,7 @@ static float CG_DrawTeamOverlay( float y ) {
 					 ( ( lwidth / 2 - len / 2 ) * TINYCHAR_WIDTH );
 				CG_DrawStringExt( xx, y,
 								  p, hcolor, qfalse, qfalse, TINYCHAR_WIDTH, TINYCHAR_HEIGHT,
-								  TEAM_OVERLAY_MAXLOCATION_WIDTH );
+								  TEAM_OVERLAY_MAXLOCATION_WIDTH, ALIGN_CENTER );
 			}
 
 			CG_ColorForHealth( hcolor );
@@ -1162,13 +1162,13 @@ static float CG_DrawTeamOverlay( float y ) {
 
 			CG_DrawStringExt( xx, y,
 							  st, hcolor, qfalse, qfalse,
-							  TINYCHAR_WIDTH, TINYCHAR_HEIGHT, 0 );
+							  TINYCHAR_WIDTH, TINYCHAR_HEIGHT, 0, ALIGN_CENTER );
 
 			// draw weapon icon
 			xx += TINYCHAR_WIDTH * 3;
 
 			CG_DrawPic( xx, y, TINYCHAR_WIDTH, TINYCHAR_HEIGHT,
-						cg_weapons[ci->curWeapon].weaponIcon[0] );
+						cg_weapons[ci->curWeapon].weaponIcon[0], ALIGN_CENTER );
 
 			// Draw powerup icons
 			xx = x;
@@ -1180,7 +1180,7 @@ static float CG_DrawTeamOverlay( float y ) {
 
 					if ( item != NULL ) { // JPW NERVE added for invulnerability powerup at beginning of map
 						CG_DrawPic( xx, y, TINYCHAR_WIDTH, TINYCHAR_HEIGHT,
-									trap_R_RegisterShader( item->icon ) );
+									trap_R_RegisterShader( item->icon ), ALIGN_CENTER );
 						xx -= TINYCHAR_WIDTH;
 					} // jpw
 				}
@@ -1545,7 +1545,7 @@ static void CG_DrawTeamInfo( void ) {
 		}
 
 		trap_R_SetColor( hcolor );
-		CG_DrawPic( CHATLOC_X, CHATLOC_Y - h, 640, h, cgs.media.teamStatusBar );
+		CG_DrawPic( CHATLOC_X, CHATLOC_Y - h, 640, h, cgs.media.teamStatusBar, ALIGN_CENTER );
 		trap_R_SetColor( NULL );
 
 		hcolor[0] = hcolor[1] = hcolor[2] = 1.0;
@@ -1555,7 +1555,7 @@ static void CG_DrawTeamInfo( void ) {
 			CG_DrawStringExt( CHATLOC_X + TINYCHAR_WIDTH,
 							  CHATLOC_Y - ( cgs.teamChatPos - i ) * TINYCHAR_HEIGHT,
 							  cgs.teamChatMsgs[i % chatHeight], hcolor, qfalse, qfalse,
-							  TINYCHAR_WIDTH, TINYCHAR_HEIGHT, 0 );
+							  TINYCHAR_WIDTH, TINYCHAR_HEIGHT, 0, ALIGN_CENTER );
 //			CG_DrawSmallString( CHATLOC_X + SMALLCHAR_WIDTH,
 //				CHATLOC_Y - (cgs.teamChatPos - i)*SMALLCHAR_HEIGHT,
 //				cgs.teamChatMsgs[i % TEAMCHAT_HEIGHT], 1.0F );
@@ -1605,7 +1605,7 @@ static void CG_DrawPickupItem( void ) {
 			//----(SA)	trying smaller text
 			color[0] = color[1] = color[2] = 1.0;
 			color[3] = fadeColor[0];
-			CG_DrawStringExt2( ICON_SIZE + 16, 398, pickupText, color, qfalse, qtrue, 10, 10, 0 );
+			CG_DrawStringExt2( ICON_SIZE + 16, 398, pickupText, color, qfalse, qtrue, 10, 10, 0, ALIGN_BOTTOMLEFT );
 //			CG_Text_Paint(ICON_SIZE + 16, 398, 2, 0.3f, color, pickupText, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE);
 
 
@@ -1651,16 +1651,16 @@ void CG_DrawHoldableItem_old( void ) {
 			//----(SA)	trying smaller text
 			//----(SA)	and off to the right side of the HUD
 //			CG_DrawPic( 100, (SCREEN_HEIGHT-ICON_SIZE)-8, ICON_SIZE/2, ICON_SIZE, cg_items[item - bg_itemlist].icons[2-(value-1)] );
-			CG_DrawPic( 606, 366, 24, 48, cg_items[item - bg_itemlist].icons[2 - ( value - 1 )] );
+			CG_DrawPic( 606, 366, 24, 48, cg_items[item - bg_itemlist].icons[2 - ( value - 1 )], ALIGN_BOTTOMRIGHT );
 
 		} else {
 //			CG_DrawPic( 100, (SCREEN_HEIGHT-ICON_SIZE)-8, ICON_SIZE/2, ICON_SIZE, cg_items[item - bg_itemlist].icons[0] );
-			CG_DrawPic( 606, 366, 24, 48, cg_items[item - bg_itemlist].icons[0] );
+			CG_DrawPic( 606, 366, 24, 48, cg_items[item - bg_itemlist].icons[0], ALIGN_BOTTOMRIGHT );
 
 		}
 
 		// draw the selection box so it's not just floating in space
-		CG_DrawPic( 606 - 4, 366 - 4, 32, 56, cgs.media.selectShader );
+		CG_DrawPic( 606 - 4, 366 - 4, 32, 56, cgs.media.selectShader, ALIGN_BOTTOMRIGHT );
 	}
 }
 /*
@@ -1699,7 +1699,7 @@ static void CG_DrawReward( void ) {
 	y = 56;
 	x = 320 - cg.rewardCount * ICON_SIZE / 2;
 	for ( i = 0 ; i < cg.rewardCount ; i++ ) {
-		CG_DrawPic( x, y, ICON_SIZE - 4, ICON_SIZE - 4, cg.rewardShader );
+		CG_DrawPic( x, y, ICON_SIZE - 4, ICON_SIZE - 4, cg.rewardShader, ALIGN_TOP );
 		x += ICON_SIZE;
 	}
 	trap_R_SetColor( NULL );
@@ -1791,7 +1791,7 @@ static void CG_DrawDisconnect( void ) {
 	// also add text in center of screen
 	s = "Connection Interrupted"; // bk 010215 - FIXME
 	w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
-	CG_DrawBigString( 320 - w / 2, 100, s, 1.0F );
+	CG_DrawBigString( 320 - w / 2, 100, s, 1.0F, ALIGN_TOP );
 
 	// blink the icon
 	if ( ( cg.time >> 9 ) & 1 ) {
@@ -1801,7 +1801,7 @@ static void CG_DrawDisconnect( void ) {
 	x = 640 - 48;
 	y = 480 - 48;
 
-	CG_DrawPic( x, y, 48, 48, trap_R_RegisterShader( "gfx/2d/net.tga" ) );
+	CG_DrawPic( x, y, 48, 48, trap_R_RegisterShader( "gfx/2d/net.tga" ), ALIGN_BOTTOMRIGHT );
 }
 
 
@@ -1833,13 +1833,13 @@ static void CG_DrawLagometer( void ) {
 	y = 480 - 48;
 
 	trap_R_SetColor( NULL );
-	CG_DrawPic( x, y, 48, 48, cgs.media.lagometerShader );
+	CG_DrawPic( x, y, 48, 48, cgs.media.lagometerShader, ALIGN_BOTTOMRIGHT );
 
 	ax = x;
 	ay = y;
 	aw = 48;
 	ah = 48;
-	CG_AdjustFrom640( &ax, &ay, &aw, &ah );
+	CG_AdjustFrom640( &ax, &ay, &aw, &ah, ALIGN_BOTTOMRIGHT, qfalse );
 
 	color = -1;
 	range = ah / 3;
@@ -1910,7 +1910,7 @@ static void CG_DrawLagometer( void ) {
 	trap_R_SetColor( NULL );
 
 	if ( cg_nopredict.integer || cg_synchronousClients.integer ) {
-		CG_DrawBigString( ax, ay, "snc", 1.0 );
+		CG_DrawBigString( ax, ay, "snc", 1.0, ALIGN_BOTTOMRIGHT );
 	}
 
 	CG_DrawDisconnect();
@@ -2002,7 +2002,7 @@ static void CG_DrawCenterString( void ) {
 
 		x = ( SCREEN_WIDTH - w ) / 2;
 
-		CG_DrawStringExt( x, y, linebuffer, color, qfalse, qtrue, cg.centerPrintCharWidth, (int)( cg.centerPrintCharWidth * 1.5 ), 0 );
+		CG_DrawStringExt( x, y, linebuffer, color, qfalse, qtrue, cg.centerPrintCharWidth, (int)( cg.centerPrintCharWidth * 1.5 ), 0, ALIGN_CENTER );
 //		CG_Text_Paint(x, y, 2, 0.3f, color, linebuffer, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE);
 
 //		y += cg.centerPrintCharWidth * 1.5;
@@ -2043,12 +2043,19 @@ CG_DrawWeapReticle
 */
 static void CG_DrawWeapReticle( void ) {
 	int weap;
-	vec4_t color = {0, 0, 0, 1};
-	vec4_t snoopercolor = {0.7, .8, 0.7, 0};    // greenish
-	float snooperBrightness;
-	float x = 80, y, w = 240, h = 240;
+	vec4_t	color = {0, 0, 0, 1};
+	vec4_t	snoopercolor = {0.7, .8, 0.7, 0};    // greenish
+	float	snooperBrightness;
+	float	x = 80, y, w = 240, h = 240;
+	float	sideWidth = 80; // Knightmare added, was 80
 
-	CG_AdjustFrom640( &x, &y, &w, &h );
+	// Knightmare- made this anamorphic
+	CG_AdjustFrom640( &x, &y, &w, &h, ALIGN_SCOPE, qfalse );
+	// Knightmare added
+	if (cgs.screenXScale > cgs.screenYScale)
+	{
+		sideWidth = 0.5 * ((cgs.glconfig.vidWidth - (cgs.screenMinScale * 480)) / cgs.screenMinScale);
+	}
 
 	weap = cg.weaponSelect;
 
@@ -2057,13 +2064,11 @@ static void CG_DrawWeapReticle( void ) {
 		weap = cg.snap->ps.weapon;
 	}
 
-
-	if ( weap == WP_SNIPERRIFLE ) {
-
-
+	if ( weap == WP_SNIPERRIFLE )
+	{
 		// sides
-		CG_FillRect( 0, 0, 80, 480, color );
-		CG_FillRect( 560, 0, 80, 480, color );
+		CG_FillSideRect (0, 0, sideWidth, 480, color, ALIGN_LEFT);
+		CG_FillSideRect (640-sideWidth, 0, sideWidth, 480, color, ALIGN_RIGHT);
 
 		// center
 		if ( cgs.media.reticleShaderSimpleQ ) {
@@ -2074,14 +2079,16 @@ static void CG_DrawWeapReticle( void ) {
 		}
 
 		// hairs
-		CG_FillRect( 84, 239, 177, 2, color );   // left
-		CG_FillRect( 320, 242, 1, 58, color );   // center top
-		CG_FillRect( 319, 300, 2, 178, color );  // center bot
-		CG_FillRect( 380, 239, 177, 2, color );  // right
-	} else if ( weap == WP_SNOOPERSCOPE ) {
+		CG_FillRect (84, 239, 177, 2, color, ALIGN_CENTER);	// left
+		CG_FillRect (320, 242, 1, 58, color, ALIGN_CENTER);	// center top
+		CG_FillRect (319, 300, 2, 178, color, ALIGN_CENTER);	// center bot
+		CG_FillRect (380, 239, 177, 2, color, ALIGN_CENTER);	// right
+	}
+	else if ( weap == WP_SNOOPERSCOPE )
+	{
 		// sides
-		CG_FillRect( 0, 0, 80, 480, color );
-		CG_FillRect( 560, 0, 80, 480, color );
+		CG_FillSideRect (0, 0, sideWidth, 480, color, ALIGN_LEFT);
+		CG_FillSideRect (640-sideWidth, 0, sideWidth, 480, color, ALIGN_RIGHT);
 
 		// center
 
@@ -2095,32 +2102,29 @@ static void CG_DrawWeapReticle( void ) {
 //----(SA)	end
 
 		if ( cgs.media.snooperShaderSimple ) {
-			CG_DrawPic( 80, 0, 480, 480, cgs.media.snooperShaderSimple );
+			CG_DrawPic( 80, 0, 480, 480, cgs.media.snooperShaderSimple, ALIGN_SCOPE );
 		}
 
 		// hairs
+		CG_FillRect (310, 120, 20, 1, color, ALIGN_CENTER);	//					-----
+		CG_FillRect (300, 160, 40, 1, color, ALIGN_CENTER);	//				-------------
+		CG_FillRect (310, 200, 20, 1, color, ALIGN_CENTER);	//					-----
 
-		CG_FillRect( 310, 120, 20, 1, color );   //					-----
-		CG_FillRect( 300, 160, 40, 1, color );   //				-------------
-		CG_FillRect( 310, 200, 20, 1, color );   //					-----
+		CG_FillRect (140, 239, 360, 1, color, ALIGN_CENTER);	// horiz ---------------------------
 
-		CG_FillRect( 140, 239, 360, 1, color );  // horiz ---------------------------
+		CG_FillRect (310, 280, 20, 1, color, ALIGN_CENTER);	//					-----		
+		CG_FillRect (300, 320, 40, 1, color, ALIGN_CENTER);	//				-------------		
+		CG_FillRect (310, 360, 20, 1, color, ALIGN_CENTER);	//					-----		
 
-		CG_FillRect( 310, 280, 20, 1, color );   //					-----
-		CG_FillRect( 300, 320, 40, 1, color );   //				-------------
-		CG_FillRect( 310, 360, 20, 1, color );   //					-----
-
-
-
-		CG_FillRect( 400, 220, 1, 40, color );   // l
-
-		CG_FillRect( 319, 60, 1, 360, color );   // vert
-
-		CG_FillRect( 240, 220, 1, 40, color );   // r
-	} else if ( weap == WP_FG42SCOPE ) {
+		CG_FillRect (400, 220, 1, 40, color, ALIGN_CENTER);	// l
+		CG_FillRect (319, 60, 1, 360, color, ALIGN_CENTER);	// vert
+		CG_FillRect (240, 220, 1, 40, color, ALIGN_CENTER);	// r
+	}
+	else if ( weap == WP_FG42SCOPE )
+	{
 		// sides
-		CG_FillRect( 0, 0, 80, 480, color );
-		CG_FillRect( 560, 0, 80, 480, color );
+		CG_FillSideRect (0, 0, sideWidth, 480, color, ALIGN_LEFT);
+		CG_FillSideRect (640-sideWidth, 0, sideWidth, 480, color, ALIGN_RIGHT);
 
 		// center
 		if ( cgs.media.reticleShaderSimpleQ ) {
@@ -2131,16 +2135,15 @@ static void CG_DrawWeapReticle( void ) {
 		}
 
 		// hairs
-		CG_FillRect( 84, 239, 150, 3, color );   // left
-		CG_FillRect( 234, 240, 173, 1, color );  // horiz center
-		CG_FillRect( 407, 239, 150, 3, color );  // right
+		CG_FillRect (84, 239, 150, 3, color, ALIGN_CENTER);	// left
+		CG_FillRect (234, 240, 173, 1, color, ALIGN_CENTER);	// horiz center
+		CG_FillRect (407, 239, 150, 3, color, ALIGN_CENTER);	// right
 
+		CG_FillRect (319, 2,   3, 151, color, ALIGN_CENTER);	// top center top
+		CG_FillRect (320, 153, 1, 114, color, ALIGN_CENTER);	// top center bot
 
-		CG_FillRect( 319, 2,   3, 151, color );  // top center top
-		CG_FillRect( 320, 153, 1, 114, color );  // top center bot
-
-		CG_FillRect( 320, 241, 1, 87, color );   // bot center top
-		CG_FillRect( 319, 327, 3, 151, color );  // bot center bot
+		CG_FillRect (320, 241, 1, 87, color, ALIGN_CENTER);	// bot center top
+		CG_FillRect (319, 327, 3, 151, color, ALIGN_CENTER);	// bot center bot
 	}
 }
 
@@ -2155,25 +2158,35 @@ CG_DrawBinocReticle
 static void CG_DrawBinocReticle( void ) {
 	// an alternative.  This gives nice sharp lines at the expense of a few extra polys
 	vec4_t color = {0, 0, 0, 1};
-	float x, y, w = 320, h = 240;
+	float	x = 0, y = 0, w = 320, h = 240;
 
-	if ( cgs.media.binocShaderSimpleQ ) {
-		CG_AdjustFrom640( &x, &y, &w, &h );
-		trap_R_DrawStretchPic( 0, 0, w, h, 0, 0, 1, 1, cgs.media.binocShaderSimpleQ );  // tl
-		trap_R_DrawStretchPic( w, 0, w, h, 1, 0, 0, 1, cgs.media.binocShaderSimpleQ );  // tr
-		trap_R_DrawStretchPic( 0, h, w, h, 0, 1, 1, 0, cgs.media.binocShaderSimpleQ );  // bl
-		trap_R_DrawStretchPic( w, h, w, h, 1, 1, 0, 0, cgs.media.binocShaderSimpleQ );  // br
+	// Knightmare added: sides
+	if (cgs.screenXScale > cgs.screenYScale)
+	{
+		float sideWidth = 1 + 0.5 * ((cgs.glconfig.vidWidth - (cgs.screenMinScale * 640)) / cgs.screenMinScale);
+		CG_FillSideRect (0, 0, sideWidth, 480, color, ALIGN_LEFT);
+		CG_FillSideRect (640-sideWidth, 0, sideWidth, 480, color, ALIGN_RIGHT);
 	}
 
-	CG_FillRect( 146, 239, 348, 1, color );
+	// Knightmare- made this anamorphic
+	if ( cgs.media.binocShaderSimpleQ ) {
+		CG_AdjustFrom640( &x, &y, &w, &h, ALIGN_SCOPE, qfalse );
+		trap_R_DrawStretchPic( x+0, y+0, w, h, 0, 0, 1, 1, cgs.media.binocShaderSimpleQ );	// tl
+		trap_R_DrawStretchPic( x+w, y+0, w, h, 1, 0, 0, 1, cgs.media.binocShaderSimpleQ );	// tr
+		trap_R_DrawStretchPic( x+0, y+h, w, h, 0, 1, 1, 0, cgs.media.binocShaderSimpleQ );	// bl
+		trap_R_DrawStretchPic( x+w, y+h, w, h, 1, 1, 0, 0, cgs.media.binocShaderSimpleQ );	// br
+	}
 
-	CG_FillRect( 188, 234, 1, 13, color );   // ll
-	CG_FillRect( 234, 226, 1, 29, color );   // l
-	CG_FillRect( 274, 234, 1, 13, color );   // lr
-	CG_FillRect( 320, 213, 1, 55, color );   // center
-	CG_FillRect( 360, 234, 1, 13, color );   // rl
-	CG_FillRect( 406, 226, 1, 29, color );   // r
-	CG_FillRect( 452, 234, 1, 13, color );   // rr
+	// Knightmare- made this anamorphic
+	CG_FillRect (146, 239, 348, 1, color, ALIGN_CENTER);
+
+	CG_FillRect (188, 234, 1, 13, color, ALIGN_CENTER);	// ll
+	CG_FillRect (234, 226, 1, 29, color, ALIGN_CENTER);	// l
+	CG_FillRect (274, 234, 1, 13, color, ALIGN_CENTER);	// lr
+	CG_FillRect (320, 213, 1, 55, color, ALIGN_CENTER);	// center
+	CG_FillRect (360, 234, 1, 13, color, ALIGN_CENTER);	// rl
+	CG_FillRect (406, 226, 1, 29, color, ALIGN_CENTER);	// r
+	CG_FillRect (452, 234, 1, 13, color, ALIGN_CENTER);	// rr
 }
 
 void CG_FinishWeaponChange( int lastweap, int newweap ); // JPW NERVE
@@ -2209,13 +2222,14 @@ static void CG_DrawCrosshair( void ) {
 		hcolor[0] = hcolor[1] = hcolor[2] = 0.0f;
 		hcolor[3] = 0.6f;
 		// option 1
-//		CG_FillRect (300, 240, 40, 2, hcolor);	// horizontal
-//		CG_FillRect (319, 242, 2, 16, hcolor);	// vertical
+//		CG_FillRect (300, 240, 40, 2, hcolor, ALIGN_CENTER);	// horizontal
+//		CG_FillRect (319, 242, 2, 16, hcolor, ALIGN_CENTER);	// vertical
 
 		// option 2
-		CG_FillRect( 305, 240, 30, 2, hcolor );  // horizontal
-		CG_FillRect( 314, 256, 12, 2, hcolor );  // horizontal2
-		CG_FillRect( 319, 242, 2, 32, hcolor );  // vertical
+		// Knightmare- made anamorphic
+		CG_FillRect (305, 240, 30, 2, hcolor, ALIGN_CENTER);	// horizontal
+		CG_FillRect (314, 256, 12, 2, hcolor, ALIGN_CENTER);	// horizontal2
+		CG_FillRect (319, 242, 2, 32, hcolor, ALIGN_CENTER);	// vertical
 
 		return;
 	}
@@ -2254,7 +2268,8 @@ static void CG_DrawCrosshair( void ) {
 
 		if ( !friendInSights ) {
 			if ( !cg.snap->ps.leanf ) {     // no crosshair while leaning
-				CG_FillRect( 319, 239, 2, 2, hcolor );      // dot
+				// Knightmare- made anamorphic
+				CG_FillRect (319, 239, 2, 2, hcolor, ALIGN_CENTER);	// dot
 			}
 			return;
 		}
@@ -2292,8 +2307,9 @@ static void CG_DrawCrosshair( void ) {
 	}
 
 
+	// Knightmare- removed because this makes it quite useless for quick use, until you get the FG42
 	// mauser only gets crosshair if you don't have the scope (I don't like this, but it's a test)
-	if ( cg.weaponSelect == WP_MAUSER ) {
+	if ( cg.weaponSelect == WP_MAUSER && !cg_drawCrosshairSniper.value ) {
 		if ( COM_BitCheck( cg.predictedPlayerState.weapons, WP_SNIPERRIFLE ) ) {
 			return;
 		}
@@ -2343,7 +2359,12 @@ static void CG_DrawCrosshair( void ) {
 
 	x = cg_crosshairX.integer;
 	y = cg_crosshairY.integer;
-	CG_AdjustFrom640( &x, &y, &w, &h );
+	// Knightmare- make this centered anamorphicly
+//	CG_AdjustFrom640( &x, &y, &w, &h, ALIGN_STRETCH, qfalse );	
+	w *= min(cgs.screenXScale, cgs.screenYScale);
+	h *= min(cgs.screenXScale, cgs.screenYScale);
+	x *= cgs.screenXScale;
+	y *= cgs.screenYScale;
 
 //----(SA)	modified
 	if ( friendInSights ) {
@@ -2452,7 +2473,7 @@ static void CG_DrawDynamiteStatus( void ) {
 	w = CG_DrawStrlen( name ) * BIGCHAR_WIDTH;
 
 	color[3] *= cg_hudAlpha.value;
-	CG_DrawBigStringColor( 320 - w / 2, 170, name, color );
+	CG_DrawBigStringColor( 320 - w / 2, 170, name, color, ALIGN_CENTER );
 
 	trap_R_SetColor( NULL );
 }
@@ -2539,10 +2560,10 @@ static void CG_DrawCrosshairNames( void ) {
 	if ( strlen( name ) ) {
 		if ( ( cgs.clientinfo[ cg.crosshairClientNum ].team == TEAM_RED ) &&
 			 ( cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_RED ) ) { // JPW NERVE -- only show same team info so people can't pan-search
-			CG_DrawBigStringColor( 320 - w / 2, 170, va( "Axis: %s", name ), teamColor );
+			CG_DrawBigStringColor( 320 - w / 2, 170, va( "Axis: %s", name ), teamColor, ALIGN_CENTER );
 		} else if ( ( cgs.clientinfo[ cg.crosshairClientNum ].team == TEAM_BLUE ) &&
 					( cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_BLUE ) ) { // JPW NERVE -- so's we can't find snipers for free
-			CG_DrawBigStringColor( 320 - w / 2, 170, va( "Ally: %s", name ), teamColor );
+			CG_DrawBigStringColor( 320 - w / 2, 170, va( "Ally: %s", name ), teamColor, ALIGN_CENTER );
 		}
 	}
 	// -NERVE - SMF
@@ -2560,12 +2581,12 @@ CG_DrawSpectator
 =================
 */
 static void CG_DrawSpectator( void ) {
-	CG_DrawBigString( 320 - 9 * 8, 440, "SPECTATOR", 1.0F );
+	CG_DrawBigString( 320 - 9 * 8, 440, "SPECTATOR", 1.0F, ALIGN_BOTTOM );
 	if ( cgs.gametype == GT_TOURNAMENT ) {
-		CG_DrawBigString( 320 - 15 * 8, 460, "waiting to play", 1.0F );
+		CG_DrawBigString( 320 - 15 * 8, 460, "waiting to play", 1.0F, ALIGN_BOTTOM );
 	}
 	if ( cgs.gametype == GT_TEAM || cgs.gametype == GT_CTF ) {
-		CG_DrawBigString( 320 - 25 * 8, 460, "use the TEAM menu to play", 1.0F );
+		CG_DrawBigString( 320 - 25 * 8, 460, "use the TEAM menu to play", 1.0F, ALIGN_BOTTOM );
 	}
 }
 
@@ -2593,7 +2614,7 @@ static void CG_DrawVote( void ) {
 		sec = 0;
 	}
 	s = va( "VOTE(%i):%s yes(F1):%i no(F2):%i", sec, cgs.voteString, cgs.voteYes, cgs.voteNo );
-	CG_DrawSmallString( 0, 58, s, 1.0F );
+	CG_DrawSmallString( 0, 58, s, 1.0F, ALIGN_TOPLEFT );
 }
 
 /*
@@ -2683,20 +2704,20 @@ static qboolean CG_DrawFollow( void ) {
 		}
 
 		x = 0.5 * ( 640 - BIGCHAR_WIDTH * strlen( deploytime ) ); //CG_DrawStrlen( deploytime ) );
-		CG_DrawStringExt( x, 24, deploytime, color, qtrue, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0 );
+		CG_DrawStringExt( x, 24, deploytime, color, qtrue, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0, ALIGN_TOP );
 		sprintf( deploytime,"(Following %s)",cgs.clientinfo[ cg.snap->ps.clientNum ].name );
 		x = 0.5 * ( 640 - BIGCHAR_WIDTH * strlen( deploytime ) ); //CG_DrawStrlen( deploytime ) );
-		CG_DrawStringExt( x, 48, deploytime, color, qtrue, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0 );
+		CG_DrawStringExt( x, 48, deploytime, color, qtrue, qtrue, BIGCHAR_WIDTH, BIGCHAR_HEIGHT, 0, ALIGN_TOP );
 
 	} else {
 // jpw
-		CG_DrawBigString( 320 - 9 * 8, 24, "following", 1.0F );
+		CG_DrawBigString( 320 - 9 * 8, 24, "following", 1.0F, ALIGN_TOP );
 
 		name = cgs.clientinfo[ cg.snap->ps.clientNum ].name;
 
 		x = 0.5 * ( 640 - GIANT_WIDTH * CG_DrawStrlen( name ) );
 
-		CG_DrawStringExt( x, 40, name, color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0 );
+		CG_DrawStringExt( x, 40, name, color, qtrue, qtrue, GIANT_WIDTH, GIANT_HEIGHT, 0, ALIGN_TOP );
 	} // JPW NERVE
 	return qtrue;
 }
@@ -2731,7 +2752,7 @@ static void CG_DrawAmmoWarning( void ) {
 		s = "LOW AMMO WARNING";
 	}
 	w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
-	CG_DrawBigString( 320 - w / 2, 64, s, 1.0F );
+	CG_DrawBigString( 320 - w / 2, 64, s, 1.0F, ALIGN_TOP );
 }
 
 /*
@@ -2759,7 +2780,7 @@ static void CG_DrawWarmup( void ) {
 	if ( sec < 0 ) {
 		s = "Waiting for players";
 		w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
-		CG_DrawBigString( 320 - w / 2, 40, s, 1.0F );
+		CG_DrawBigString( 320 - w / 2, 40, s, 1.0F, ALIGN_TOP );
 		cg.warmupCount = 0;
 		return;
 	}
@@ -2786,8 +2807,8 @@ static void CG_DrawWarmup( void ) {
 		} else {
 			cw = GIANT_WIDTH;
 		}
-		CG_DrawStringExt( 320 - w * cw / 2, 20,s, colorWhite,
-						  qfalse, qtrue, cw, (int)( cw * 1.5 ), 0 );
+		CG_DrawStringExt( 320 - w * cw / 2, 20, s, colorWhite,
+						  qfalse, qtrue, cw, (int)( cw * 1.5 ), 0, ALIGN_TOP );
 	}
 
 
@@ -2829,7 +2850,7 @@ static void CG_DrawWarmup( void ) {
 
 	w = CG_DrawStrlen( s );
 	CG_DrawStringExt( 320 - w * cw / 2, 70, s, colorWhite,
-					  qfalse, qtrue, cw, (int)( cw * 1.5 ), 0 );
+					  qfalse, qtrue, cw, (int)( cw * 1.5 ), 0, ALIGN_TOP );
 }
 
 //==================================================================================
@@ -2869,7 +2890,7 @@ static void CG_DrawFlashFade( void ) {
 		VectorClear( col );
 		col[3] = cgs.scrFadeAlphaCurrent;
 //		CG_FillRect( -10, -10, 650, 490, col );
-		CG_FillRect( 0, 0, 640, 480, col ); // why do a bunch of these extend outside 640x480?
+		CG_FillRect( 0, 0, 640, 480, col, ALIGN_STRETCH_ALL ); // why do a bunch of these extend outside 640x480?
 	}
 }
 
@@ -2923,7 +2944,7 @@ static void CG_DrawFlashZoomTransition( void ) {
 			Vector4Set( color, 0, 0, 0, 1.0f - frac );
 		}
 
-		CG_FillRect( -10, -10, 650, 490, color );
+		CG_FillRect( -10, -10, 650, 490, color, ALIGN_STRETCH_ALL );
 	}
 }
 
@@ -2953,7 +2974,7 @@ static void CG_DrawFlashDamage( void ) {
 		VectorSet( col, 0.2, 0, 0 );
 		col[3] =  0.7 * ( redFlash / 5.0 );
 
-		CG_FillRect( -10, -10, 650, 490, col );
+		CG_FillRect( -10, -10, 650, 490, col, ALIGN_STRETCH_ALL );
 	}
 }
 
@@ -3005,7 +3026,7 @@ static void CG_DrawFlashFire( void ) {
 		col[2] = alpha;
 		col[3] = alpha;
 		trap_R_SetColor( col );
-		CG_DrawPic( -10, -10, 650, 490, cgs.media.viewFlashFire[( cg.time / 50 ) % 16] );
+		CG_DrawPic( -10, -10, 650, 490, cgs.media.viewFlashFire[( cg.time / 50 ) % 16], ALIGN_STRETCH_ALL );
 		trap_R_SetColor( NULL );
 
 		trap_S_AddLoopingSound( cg.snap->ps.clientNum, cg.snap->ps.origin, vec3_origin, cgs.media.flameSound, (int)( 255.0 * alpha ) );
@@ -3052,7 +3073,7 @@ static void CG_DrawFlashLightning( void ) {
 			shader = cgs.media.viewTeslaDamageEffectShader;
 		}
 
-		CG_DrawPic( -10, -10, 650, 490, shader );
+		CG_DrawPic( -10, -10, 650, 490, shader, ALIGN_STRETCH_ALL );
 	}
 }
 
@@ -3113,11 +3134,11 @@ void CG_ObjectivePrint( const char *str, int charWidth, int team ) {
 
 static void CG_DrawObjectiveInfo( void ) {
 	char    *start;
-	int l;
-	int x, y, w;
-	int x1, y1, x2, y2;
+	int		l;
+	int		x, y, w;
+	int		x1, y1, x2, y2;
 	float   *color;
-	vec4_t backColor = { 0.2f, 0.2f, 0.2f, 1.f };
+	vec4_t	backColor = { 0.2f, 0.2f, 0.2f, 1.f };
 
 	if ( !cg.oidPrintTime ) {
 		return;
@@ -3172,10 +3193,10 @@ static void CG_DrawObjectiveInfo( void ) {
 	y2 = y - cg.oidPrintCharWidth * 1.5 + 4;
 
 	backColor[3] = color[3];
-	CG_FillRect( x1, y1, x2 - x1, y2 - y1, backColor );
+	CG_FillRect( x1, y1, x2 - x1, y2 - y1, backColor, ALIGN_TOPLEFT );
 
 	VectorSet( backColor, 0, 0, 0 );
-	CG_DrawRect( x1, y1, x2 - x1, y2 - y1, 1, backColor );
+	CG_DrawRect( x1, y1, x2 - x1, y2 - y1, 1, backColor, ALIGN_TOPLEFT );
 
 	// do the actual drawing
 	start = cg.oidPrint;
@@ -3200,7 +3221,7 @@ static void CG_DrawObjectiveInfo( void ) {
 		x = OID_LEFT;
 
 		CG_DrawStringExt( x, y, linebuffer, color, qfalse, qtrue,
-						  cg.oidPrintCharWidth, (int)( cg.oidPrintCharWidth * 1.5 ), 0 );
+						  cg.oidPrintCharWidth, (int)( cg.oidPrintCharWidth * 1.5 ), 0, ALIGN_TOPLEFT );
 
 		y += cg.oidPrintCharWidth * 1.5;
 
@@ -3286,7 +3307,7 @@ static void CG_DrawGameScreenFade( void ) {
 
 	VectorClear( col );
 	col[3] = cg.viewFade;
-	CG_FillRect( 0, 0, 640, 480, col );
+	CG_FillRect( 0, 0, 640, 480, col, ALIGN_STRETCH_ALL );
 }
 
 /*
@@ -3319,7 +3340,7 @@ static void CG_ScreenFade( void ) {
 			return;
 		}
 
-		CG_FillRect( 0, 0, 640, 480, cg.fadeColor1 );
+		CG_FillRect( 0, 0, 640, 480, cg.fadeColor1, ALIGN_STRETCH_ALL );
 
 	} else {
 		t = ( float )msec * cg.fadeRate;
@@ -3330,7 +3351,7 @@ static void CG_ScreenFade( void ) {
 		}
 
 		if ( color[ 3 ] ) {
-			CG_FillRect( 0, 0, 640, 480, color );
+			CG_FillRect( 0, 0, 640, 480, color, ALIGN_STRETCH_ALL );
 		}
 	}
 }
@@ -3589,7 +3610,7 @@ void CG_DrawActive( stereoFrame_t stereoView ) {
 		h = LIMBO_3D_H;
 
 		cg.refdef.width = 0;
-		CG_AdjustFrom640( &x, &y, &w, &h );
+		CG_AdjustFrom640( &x, &y, &w, &h, ALIGN_CENTER, qfalse );
 
 		cg.refdef.x = x;
 		cg.refdef.y = y;

@@ -1518,7 +1518,8 @@ void QDECL FS_Printf( fileHandle_t h, const char *fmt, ... ) {
 	char msg[MAXPRINTMSG];
 
 	va_start( argptr,fmt );
-	vsprintf( msg,fmt,argptr );
+//	vsprintf( msg, fmt, argptr );
+	Q_vsnprintf( msg, sizeof(msg), fmt, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	FS_Write( msg, strlen( msg ), h );

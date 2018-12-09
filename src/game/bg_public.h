@@ -517,6 +517,7 @@ typedef enum
 	AICHAR_HEINRICH,    //----(SA)	added
 
 	AICHAR_PARTISAN,
+	AICHAR_RUSSIAN,	// Knightmare added
 	AICHAR_CIVILIAN,
 
 	NUM_CHARACTERS
@@ -611,6 +612,7 @@ typedef struct ammotable_s {
 } ammotable_t;
 
 extern ammotable_t ammoTable[];     // defined in bg_misc.c
+extern ammotable_t staticAmmoTable[];     // defined in bg_misc.c
 extern int weapAlts[];  // defined in bg_misc.c
 
 
@@ -1254,6 +1256,8 @@ typedef struct gitem_s {
 // included in both the game dll and the client
 extern gitem_t bg_itemlist[];
 extern int bg_numItems;
+
+void BG_InitAmmoTable( void );	// Knightmare added
 
 gitem_t *BG_FindItem( const char *pickupName );
 gitem_t *BG_FindItem2( const char *name );  //----(SA)	added

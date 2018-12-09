@@ -28,6 +28,7 @@ If you have questions concerning this license or the applicable additional terms
 
 // q_shared.c -- stateless support routines that are included in each code dll
 #include "q_splineshared.h"
+#include "util_str.h"
 
 /*
 ============================================================================
@@ -691,7 +692,8 @@ void QDECL Com_sprintf( char *dest, int size, const char *fmt, ... ) {
 	char bigbuffer[32000];      // big, but small enough to fit in PPC stack
 
 	va_start( argptr,fmt );
-	len = vsprintf( bigbuffer,fmt,argptr );
+//	len = vsprintf( bigbuffer, fmt, argptr );
+	len = Q_vsnprintf( bigbuffer, sizeof(bigbuffer), fmt, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 	if ( len >= sizeof( bigbuffer ) ) {
 		Com_Error( ERR_FATAL, "Com_sprintf: overflowed bigbuffer" );
@@ -722,7 +724,8 @@ char    * QDECL va( char *format, ... ) {
 	index++;
 
 	va_start( argptr, format );
-	vsprintf( buf, format,argptr );
+//	vsprintf( buf, format, argptr );
+	Q_vsnprintf( buf, sizeof(buf), format, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	return buf;

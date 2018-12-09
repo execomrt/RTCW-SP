@@ -38,6 +38,12 @@ cvar_t      *cl_graphheight;
 cvar_t      *cl_graphscale;
 cvar_t      *cl_graphshift;
 
+// Knightmare added
+cvar_t		*scr_surroundlayout;	// whether to keep HUD/menu elements on center screen in triple-wide video modes
+cvar_t		*scr_surroundleft;		// left placement of HUD/menu elements on center screen in triple-wide video modes
+cvar_t		*scr_surroundright;		// right placement of HUD/menu elements on center screen in triple-wide video modes
+// end Knightmare
+
 /*
 ================
 SCR_DrawNamedPic
@@ -51,7 +57,7 @@ void SCR_DrawNamedPic( float x, float y, float width, float height, const char *
 	assert( width != 0 );
 
 	hShader = re.RegisterShader( picname );
-	SCR_AdjustFrom640( &x, &y, &width, &height );
+	SCR_AdjustFrom640( &x, &y, &width, &height, ALIGN_STRETCH );
 	re.DrawStretchPic( x, y, width, height, 0, 0, 1, 1, hShader );
 }
 
@@ -63,9 +69,11 @@ SCR_AdjustFrom640
 Adjusted for resolution and screen aspect ratio
 ================
 */
-void SCR_AdjustFrom640( float *x, float *y, float *w, float *h ) {
-	float xscale;
-	float yscale;
+void SCR_AdjustFrom640( float *x, float *y, float *w, float *h, scralign_t align ) {
+	float	screenAspect;
+	float	xscale, lb_xscale, yscale, minscale, vertscale;	// Knightmare added
+	float	tmp_x, tmp_y, tmp_w, tmp_h, tmp_left, tmp_right;	// Knightmare added
+	float	xleft, xright;
 
 #if 0
 	// adjust for wide screens
@@ -75,9 +83,269 @@ void SCR_AdjustFrom640( float *x, float *y, float *w, float *h ) {
 #endif
 
 	// scale for screen sizes
-	xscale = cls.glconfig.vidWidth / 640.0;
-	yscale = cls.glconfig.vidHeight / 480.0;
-	if ( x ) {
+//	xscale = cls.glconfig.vidWidth / 640.0;
+//	yscale = cls.glconfig.vidHeight / 480.0;
+//	minscale = min (xscale, yscale);
+	screenAspect = (float)cls.glconfig.vidWidth / (float)cls.glconfig.vidHeight;	// Knightmare added
+
+	// for eyefinity/surround setups, keep everything on the center monitor
+	if (scr_surroundlayout && scr_surroundlayout->integer && screenAspect >= 3.6f)
+	{
+		if (scr_surroundleft && scr_surroundleft->value > 0.0f && scr_surroundleft->value < 1.0f)
+			xleft = (float)cls.glconfig.vidWidth * scr_surroundleft->value;
+		else
+			xleft = (float)cls.glconfig.vidWidth / 3.0f;
+		if (scr_surroundright && scr_surroundright->value > 0.0f && scr_surroundright->value < 1.0f)
+			xright = (float)cls.glconfig.vidWidth * scr_surroundright->value;
+		else
+			xright = (float)cls.glconfig.vidWidth * (2.0f / 3.0f);
+		xscale = (xright - xleft) / SCREEN_WIDTH;
+	}
+	else {
+		xleft = 0.0f;
+		xright = (float)cls.glconfig.vidWidth;
+		xscale = (float)cls.glconfig.vidWidth / SCREEN_WIDTH;
+	}
+
+	lb_xscale = (float)cls.glconfig.vidWidth / SCREEN_WIDTH;
+	yscale = (float)cls.glconfig.vidHeight / SCREEN_HEIGHT;
+	minscale = min(xscale, yscale);
+
+	// hack for 5:4 modes
+	if ( !(xscale > yscale) && align != ALIGN_LETTERBOX)
+		align = ALIGN_STRETCH;
+
+	// Knightmare- added anamorphic code
+	switch (align)
+	{
+	case ALIGN_CENTER:
+		if (x) {
+		tmp_x = *x;
+			*x = (tmp_x - (0.5 * SCREEN_WIDTH)) * minscale + (0.5 * cls.glconfig.vidWidth);
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - (0.5 * SCREEN_HEIGHT)) * minscale + (0.5 * cls.glconfig.vidHeight);
+		}
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		break;
+	case ALIGN_LETTERBOX:
+		// special case: video mode (eyefinity?) is wider than object
+		if ( w != NULL && h != NULL && ((float)cls.glconfig.vidWidth / (float)cls.glconfig.vidHeight > *w / *h) ) {
+			tmp_h = *h;
+			vertscale = cls.glconfig.vidHeight / tmp_h;
+			if (x != NULL && w != NULL) {
+				tmp_x = *x;
+				tmp_w = *w;
+				*x = tmp_x * lb_xscale - (0.5 * (tmp_w * vertscale - tmp_w * lb_xscale));
+			}
+			if (y)
+				*y = 0;
+			if (w) 
+				*w *= vertscale;
+			if (h)
+				*h *= vertscale;
+		}
+		else {
+			if (x)
+				*x *= xscale;
+			if (y != NULL && h != NULL)  {
+				tmp_y = *y;
+				tmp_h = *h;
+				*y = tmp_y * yscale - (0.5 * (tmp_h * xscale - tmp_h * yscale));
+			}
+			if (w) 
+				*w *= xscale;
+			if (h)
+				*h *= xscale;
+		}
+		break;
+	case ALIGN_TOP:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - (0.5 * SCREEN_WIDTH)) * minscale + (0.5 * cls.glconfig.vidWidth);
+		}
+		if (y)
+			*y *= minscale;
+		break;
+	case ALIGN_BOTTOM:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - (0.5 * SCREEN_WIDTH)) * minscale + (0.5 * cls.glconfig.vidWidth);
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - SCREEN_HEIGHT) * minscale + cls.glconfig.vidHeight;
+		}
+		break;
+	case ALIGN_RIGHT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - SCREEN_WIDTH) * minscale + xright;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - (0.5 * SCREEN_HEIGHT)) * minscale + (0.5 * cls.glconfig.vidHeight);
+		}
+		break;
+	case ALIGN_LEFT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x)
+			*x *= minscale + xleft;
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - (0.5 * SCREEN_HEIGHT)) * minscale + (0.5 * cls.glconfig.vidHeight);
+		}
+		break;
+	case ALIGN_TOPRIGHT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - SCREEN_WIDTH) * minscale + xright;
+		}
+		if (y)
+			*y *= minscale;
+		break;
+	case ALIGN_TOPLEFT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * minscale + xleft;
+		}
+		if (y)
+			*y *= minscale;
+		break;
+	case ALIGN_BOTTOMRIGHT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - SCREEN_WIDTH) * minscale + xright;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - SCREEN_HEIGHT) * minscale + cls.glconfig.vidHeight;
+		}
+		break;
+	case ALIGN_BOTTOMLEFT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * minscale + xleft;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - SCREEN_HEIGHT) * minscale + cls.glconfig.vidHeight;
+		}
+		break;
+	case ALIGN_TOP_STRETCH:
+		if (w) 
+			*w *= xscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * xscale + xleft;
+		}
+		if (y)
+			*y *= minscale;
+		break;
+	case ALIGN_BOTTOM_STRETCH:
+		if (w) 
+			*w *= xscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * xscale + xleft;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - SCREEN_HEIGHT) * minscale + cls.glconfig.vidHeight;
+		}
+		break;
+	case ALIGN_STRETCH_ALL:
+		if (x)
+			*x *= lb_xscale;
+		if (y) 
+			*y *= yscale;
+		if (w) 
+			*w *= lb_xscale;
+		if (h)
+			*h *= yscale;
+		break;
+	case ALIGN_STRETCH_LEFT_CENTER:
+		if (x && w) {
+			tmp_x = *x;
+			tmp_w = *w;
+			tmp_left = tmp_x * xscale + xleft;
+			tmp_right = (tmp_x + tmp_w - (0.5*SCREEN_WIDTH)) * minscale + (0.5*(cls.glconfig.vidWidth));
+			*x = tmp_left;
+			*w = tmp_right - tmp_left;
+		}
+		if (y) 
+			*y *= minscale;
+		if (h)
+			*h *= minscale;
+		break;
+	case ALIGN_STRETCH_RIGHT_CENTER:
+		if (x && w) {
+			tmp_x = *x;
+			tmp_w = *w;
+			tmp_left = (tmp_x - (0.5*SCREEN_WIDTH)) * minscale + (0.5*(cls.glconfig.vidWidth));
+			tmp_right = (tmp_x + tmp_w - SCREEN_WIDTH) * xscale + xright;
+			*x = tmp_left;
+			*w = tmp_right - tmp_left;
+		}
+		if (y) 
+			*y *= minscale;
+		if (h)
+			*h *= minscale;
+		break;
+	case ALIGN_STRETCH:
+	default:
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * xscale + xleft;
+		}
+		if (y) 
+			*y *= yscale;
+		if (w) 
+			*w *= xscale;
+		if (h)
+			*h *= yscale;
+		break;
+	}
+/*	if ( x ) {
 		*x *= xscale;
 	}
 	if ( y ) {
@@ -88,7 +356,7 @@ void SCR_AdjustFrom640( float *x, float *y, float *w, float *h ) {
 	}
 	if ( h ) {
 		*h *= yscale;
-	}
+	}*/
 }
 
 /*
@@ -101,7 +369,7 @@ Coordinates are 640*480 virtual values
 void SCR_FillRect( float x, float y, float width, float height, const float *color ) {
 	re.SetColor( color );
 
-	SCR_AdjustFrom640( &x, &y, &width, &height );
+	SCR_AdjustFrom640( &x, &y, &width, &height, ALIGN_STRETCH );
 	re.DrawStretchPic( x, y, width, height, 0, 0, 0, 0, cls.whiteShader );
 
 	re.SetColor( NULL );
@@ -116,7 +384,7 @@ Coordinates are 640*480 virtual values
 =================
 */
 void SCR_DrawPic( float x, float y, float width, float height, qhandle_t hShader ) {
-	SCR_AdjustFrom640( &x, &y, &width, &height );
+	SCR_AdjustFrom640( &x, &y, &width, &height, ALIGN_STRETCH );
 	re.DrawStretchPic( x, y, width, height, 0, 0, 1, 1, hShader );
 }
 
@@ -145,7 +413,7 @@ static void SCR_DrawChar( int x, int y, float size, int ch ) {
 	ay = y;
 	aw = size;
 	ah = size;
-	SCR_AdjustFrom640( &ax, &ay, &aw, &ah );
+	SCR_AdjustFrom640( &ax, &ay, &aw, &ah, ALIGN_STRETCH );
 
 	row = ch >> 4;
 	col = ch & 15;
@@ -418,12 +686,19 @@ void SCR_DrawDebugGraph( void ) {
 SCR_Init
 ==================
 */
-void SCR_Init( void ) {
+void SCR_Init( void )
+{
 	cl_timegraph = Cvar_Get( "timegraph", "0", CVAR_CHEAT );
 	cl_debuggraph = Cvar_Get( "debuggraph", "0", CVAR_CHEAT );
 	cl_graphheight = Cvar_Get( "graphheight", "32", CVAR_CHEAT );
 	cl_graphscale = Cvar_Get( "graphscale", "1", CVAR_CHEAT );
 	cl_graphshift = Cvar_Get( "graphshift", "0", CVAR_CHEAT );
+
+	// Knightmare added
+	scr_surroundlayout = Cvar_Get ("scr_surroundlayout", "1", CVAR_ARCHIVE);	// whether to keep HUD/menu elements on center screen in triple-wide video modes
+	scr_surroundleft = Cvar_Get ("scr_surroundleft", "0.333333333333", CVAR_ARCHIVE);		// left placement of HUD/menu elements on center screen in triple-wide video modes
+	scr_surroundright = Cvar_Get ("scr_surroundright", "0.666666666667", CVAR_ARCHIVE);		// right placement of HUD/menu elements on center screen in triple-wide video modes
+	// end Knightmare
 
 	scr_initialized = qtrue;
 }
@@ -443,22 +718,26 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 
 	// wide aspect ratio screens need to have the sides cleared
 	// unless they are displaying game renderings
-	if ( cls.state != CA_ACTIVE ) {
+	// Knightmare- removed because it causes a bad pointer crash in RE_SetColor at dam -> village2 map change
+//	if ( cls.state != CA_ACTIVE ) {
+/*	if ( cls.state != CA_ACTIVE && cls.state != CA_CINEMATIC ) {	// Knightmare- fix cinematics in widescreen
 		if ( cls.glconfig.vidWidth * 480 > cls.glconfig.vidHeight * 640 ) {
 			re.SetColor( g_color_table[0] );
 			re.DrawStretchPic( 0, 0, cls.glconfig.vidWidth, cls.glconfig.vidHeight, 0, 0, 0, 0, cls.whiteShader );
 			re.SetColor( NULL );
 		}
-	}
+	}*/
 
-	if ( !uivm ) {
+	// Knightmare removed
+/*	if ( !uivm ) {
 		Com_DPrintf( "draw screen without UI loaded\n" );
 		return;
-	}
+	}*/
 
 	// if the menu is going to cover the entire screen, we
 	// don't need to render anything under it
-	if ( !VM_Call( uivm, UI_IS_FULLSCREEN ) ) {
+//	if ( !VM_Call( uivm, UI_IS_FULLSCREEN ) ) {
+	if ( uivm &&  !VM_Call( uivm, UI_IS_FULLSCREEN ) ) {	// Knightmare- fix cinematics in widescreen
 		switch ( cls.state ) {
 		default:
 			Com_Error( ERR_FATAL, "SCR_DrawScreenField: bad cls.state" );
@@ -493,6 +772,7 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 			// also draw the connection information, so it doesn't
 			// flash away too briefly on local or lan games
 			//if (!com_sv_running->value || Cvar_VariableIntegerValue("sv_cheats"))	// Ridah, don't draw useless text if not in dev mode
+			// refresh to update the time
 			VM_Call( uivm, UI_REFRESH, cls.realtime );
 			VM_Call( uivm, UI_DRAW_CONNECT_SCREEN, qtrue );
 			break;
@@ -504,7 +784,8 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 	}
 
 	// the menu draws next
-	if ( cls.keyCatchers & KEYCATCH_UI && uivm ) {
+//	if ( cls.keyCatchers & KEYCATCH_UI && uivm ) {
+	if ( Key_GetCatcher( ) & KEYCATCH_UI && uivm ) {	// Knightmare- fix cinematics in widescreen
 		VM_Call( uivm, UI_REFRESH, cls.realtime );
 	}
 

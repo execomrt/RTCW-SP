@@ -1524,6 +1524,8 @@ typedef struct {
 	glconfig_t glconfig;                // rendering configuration
 	float screenXScale;                 // derived from glconfig
 	float screenYScale;
+	float screenMinScale;				// Knightmare added
+	float screenAspect;					// Knightmare added
 	float screenXBias;
 
 	int serverCommandSequence;              // reliable command stream counter
@@ -1634,6 +1636,7 @@ extern vmCvar_t cg_drawIcons;
 extern vmCvar_t cg_youGotMail;          //----(SA)	added
 extern vmCvar_t cg_drawAmmoWarning;
 extern vmCvar_t cg_drawCrosshair;
+extern vmCvar_t cg_drawCrosshairSniper;	// Knightmare added
 extern vmCvar_t cg_drawCrosshairNames;
 extern vmCvar_t cg_drawCrosshairPickups;
 extern vmCvar_t cg_hudAlpha;
@@ -1683,6 +1686,7 @@ extern vmCvar_t cg_autoswitch;
 extern vmCvar_t cg_ignore;
 extern vmCvar_t cg_simpleItems;
 extern vmCvar_t cg_fov;
+extern vmCvar_t cg_widescreen_fov;		// Knightmare added
 extern vmCvar_t cg_zoomFov;
 extern vmCvar_t cg_zoomDefaultBinoc;
 extern vmCvar_t cg_zoomDefaultSniper;
@@ -1830,31 +1834,33 @@ void CG_Concussive( centity_t *cent );
 //
 // cg_drawtools.c
 //
-void CG_AdjustFrom640( float *x, float *y, float *w, float *h );
-void CG_FillRect( float x, float y, float width, float height, const float *color );
-void CG_HorizontalPercentBar( float x, float y, float width, float height, float percent );
-void CG_DrawPic( float x, float y, float width, float height, qhandle_t hShader );
-void CG_FilledBar( float x, float y, float w, float h, const float *startColorIn, float *endColor, const float *bgColor, float frac, int flags );
+void CG_AdjustFrom640( float *x, float *y, float *w, float *h, scralign_t align, qboolean ignoreSurround );	// Knightmare changed
+float CG_Get2DScreenWidth (void);	// Knightmare added
+void CG_FillRect( float x, float y, float width, float height, const float *color, scralign_t align );	// Knightmare changed
+void CG_FillSideRect( float x, float y, float width, float height, const float *color, scralign_t align );	// Knightmare added
+void CG_HorizontalPercentBar( float x, float y, float width, float height, float percent, scralign_t align );	// Knightmare changed
+void CG_DrawPic( float x, float y, float width, float height, qhandle_t hShader, scralign_t align );	// Knightmare changed
+void CG_FilledBar( float x, float y, float w, float h, const float *startColorIn, float *endColor, const float *bgColor, float frac, int flags, scralign_t align );	// Knightmare changed
 // JOSEPH 10-26-99
 void CG_DrawStretchPic( float x, float y, float width, float height, qhandle_t hShader );
 // END JOSEPH
 void CG_DrawString( float x, float y, const char *string,
-					float charWidth, float charHeight, const float *modulate );
+					float charWidth, float charHeight, const float *modulate, scralign_t align );	// Knightmare changed
 
 
 void CG_DrawStringExt( int x, int y, const char *string, const float *setColor,
-					   qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars );
+					   qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars, scralign_t align );	// Knightmare changed
 // JOSEPH 4-17-00
 void CG_DrawStringExt2( int x, int y, const char *string, const float *setColor,
-						qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars );
+						qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars, scralign_t align );	// Knightmare changed
 // END JOSEPH
-void CG_DrawBigString( int x, int y, const char *s, float alpha );
-void CG_DrawBigStringColor( int x, int y, const char *s, vec4_t color );
-void CG_DrawSmallString( int x, int y, const char *s, float alpha );
-void CG_DrawSmallStringColor( int x, int y, const char *s, vec4_t color );
+void CG_DrawBigString( int x, int y, const char *s, float alpha, scralign_t align );	// Knightmare changed
+void CG_DrawBigStringColor( int x, int y, const char *s, vec4_t color, scralign_t align );	// Knightmare changed
+void CG_DrawSmallString( int x, int y, const char *s, float alpha, scralign_t align );	// Knightmare changed
+void CG_DrawSmallStringColor( int x, int y, const char *s, vec4_t color, scralign_t align );	// Knightmare changed
 // JOSEPH 4-25-00
-void CG_DrawBigString2( int x, int y, const char *s, float alpha );
-void CG_DrawBigStringColor2( int x, int y, const char *s, vec4_t color );
+void CG_DrawBigString2( int x, int y, const char *s, float alpha, scralign_t align );	// Knightmare changed
+void CG_DrawBigStringColor2( int x, int y, const char *s, vec4_t color, scralign_t align );	// Knightmare changed
 // END JOSEPH
 int CG_DrawStrlen( const char *str );
 
@@ -1867,9 +1873,9 @@ void CG_GetColorForHealth( int health, int armor, vec4_t hcolor );
 void UI_DrawProportionalString( int x, int y, const char* str, int style, vec4_t color );
 
 // new hud stuff
-void CG_DrawRect( float x, float y, float width, float height, float size, const float *color );
-void CG_DrawSides( float x, float y, float w, float h, float size );
-void CG_DrawTopBottom( float x, float y, float w, float h, float size );
+void CG_DrawRect( float x, float y, float width, float height, float size, const float *color, scralign_t align );	// Knightmare changed
+void CG_DrawSides( float x, float y, float w, float h, float size, scralign_t align );	// Knightmare changed
+void CG_DrawTopBottom( float x, float y, float w, float h, float size, scralign_t align );	// Knightmare changed
 
 
 
@@ -1887,13 +1893,13 @@ void CG_AddLagometerFrameInfo( void );
 void CG_AddLagometerSnapshotInfo( snapshot_t *snap );
 void CG_CenterPrint( const char *str, int y, int charWidth );
 void CG_ObjectivePrint( const char *str, int charWidth, int team );     // NERVE - SMF
-void CG_DrawHead( float x, float y, float w, float h, int clientNum, vec3_t headAngles );
+void CG_DrawHead( float x, float y, float w, float h, int clientNum, vec3_t headAngles, scralign_t align );	// Knightmare changed
 void CG_DrawActive( stereoFrame_t stereoView );
-void CG_DrawFlagModel( float x, float y, float w, float h, int team );
+void CG_DrawFlagModel( float x, float y, float w, float h, int team, scralign_t align );	// Knightmare changed
 
-void CG_DrawTeamBackground( int x, int y, int w, int h, float alpha, int team );
-void CG_OwnerDraw( float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, int font, float scale, vec4_t color, qhandle_t shader, int textStyle );
-void CG_Text_Paint( float x, float y, int font, float scale, vec4_t color, const char *text, float adjust, int limit, int style );    //----(SA)	modified
+void CG_DrawTeamBackground( int x, int y, int w, int h, float alpha, int team, scralign_t align );	// Knightmare changed
+void CG_OwnerDraw( float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, int font, float scale, vec4_t color, qhandle_t shader, int textStyle, scralign_t scralign );	// Knightmare changed
+void CG_Text_Paint( float x, float y, int font, float scale, vec4_t color, const char *text, float adjust, int limit, int style, scralign_t align );   	// Knightmare changed //----(SA)	modified
 int CG_Text_Width( const char *text, int font, float scale, int limit );
 int CG_Text_Height( const char *text, int font, float scale, int limit );
 void CG_SelectPrevPlayer();
@@ -1907,8 +1913,8 @@ void CG_InitTeamChat();
 void CG_GetTeamColor( vec4_t *color );
 const char *CG_GetGameStatusText();
 const char *CG_GetKillerText();
-void CG_Draw3DModel( float x, float y, float w, float h, qhandle_t model, qhandle_t skin, vec3_t origin, vec3_t angles );
-void CG_Text_PaintChar( float x, float y, float width, float height, float scale, float s, float t, float s2, float t2, qhandle_t hShader );
+void CG_Draw3DModel( float x, float y, float w, float h, qhandle_t model, qhandle_t skin, vec3_t origin, vec3_t angles, scralign_t align );	// Knightmare changed
+void CG_Text_PaintChar( float x, float y, float width, float height, float scale, float s, float t, float s2, float t2, qhandle_t hShader, scralign_t align );	// Knightmare changed
 void CG_CheckOrderPending();
 const char *CG_GameTypeString();
 qboolean CG_YourTeamHasFlag();

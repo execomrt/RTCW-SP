@@ -37,6 +37,7 @@ If you have questions concerning this license or the applicable additional terms
 #pragma warning( pop )
 #endif
 
+#include <mmeapi.h>
 #define DIRECTINPUT_VERSION 0x0800
 
 #ifdef DOOMSOUND    ///// (SA) DOOMSOUND

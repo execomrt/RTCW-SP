@@ -124,6 +124,7 @@ typedef struct {
 	float y;    // vert position
 	float w;    // width
 	float h;    // height;
+	scralign_t	scrAlign;	// Knightmare added- alignment
 } rectDef_t;
 
 typedef rectDef_t Rectangle;
@@ -206,7 +207,7 @@ typedef struct editFieldDef_s {
 	int paintOffset;                //
 } editFieldDef_t;
 
-#define MAX_MULTI_CVARS 32
+#define MAX_MULTI_CVARS 128	// Knightmare - increased from 32 to support longer video mode lists
 
 typedef struct multiDef_s {
 	const char *cvarList[MAX_MULTI_CVARS];
@@ -349,22 +350,22 @@ typedef struct {
 typedef struct {
 	qhandle_t ( *registerShaderNoMip )( const char *p );
 	void ( *setColor )( const vec4_t v );
-	void ( *drawHandlePic )( float x, float y, float w, float h, qhandle_t asset );
+	void ( *drawHandlePic )( float x, float y, float w, float h, qhandle_t asset, scralign_t align  );	// Knightmare changed
 	void ( *drawStretchPic )( float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader );
-	void ( *drawText )( float x, float y, int font, float scale, vec4_t color, const char *text, float adjust, int limit, int style );
+	void ( *drawText )( float x, float y, int font, float scale, vec4_t color, const char *text, float adjust, int limit, int style, scralign_t align  );	// Knightmare changed
 	int ( *textWidth )( const char *text, int font, float scale, int limit );
 	int ( *textHeight )( const char *text, int font, float scale, int limit );
 	qhandle_t ( *registerModel )( const char *p );
 	void ( *modelBounds )( qhandle_t model, vec3_t min, vec3_t max );
-	void ( *fillRect )( float x, float y, float w, float h, const vec4_t color );
-	void ( *drawRect )( float x, float y, float w, float h, float size, const vec4_t color );
-	void ( *drawSides )( float x, float y, float w, float h, float size );
-	void ( *drawTopBottom )( float x, float y, float w, float h, float size );
+	void ( *fillRect )( float x, float y, float w, float h, const vec4_t color, scralign_t align );	// Knightmare changed
+	void ( *drawRect )( float x, float y, float w, float h, float size, const vec4_t color, scralign_t align );	// Knightmare changed
+	void ( *drawSides )( float x, float y, float w, float h, float size, scralign_t align );	// Knightmare changed
+	void ( *drawTopBottom )( float x, float y, float w, float h, float size, scralign_t align );	// Knightmare changed
 	void ( *clearScene )();
 	void ( *addRefEntityToScene )( const refEntity_t *re );
 	void ( *renderScene )( const refdef_t *fd );
 	void ( *registerFont )( const char *pFontname, int pointSize, fontInfo_t *font );
-	void ( *ownerDrawItem )( float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, int font, float scale, vec4_t color, qhandle_t shader, int textStyle );
+	void ( *ownerDrawItem )( float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, int font, float scale, vec4_t color, qhandle_t shader, int textStyle, scralign_t scralign );	// Knightmare changed
 	float ( *getValue )( int ownerDraw, int type );
 	qboolean ( *ownerDrawVisible )( int flags );
 	void ( *runScript )( char **p );
@@ -372,7 +373,7 @@ typedef struct {
 	void ( *getCVarString )( const char *cvar, char *buffer, int bufsize );
 	float ( *getCVarValue )( const char *cvar );
 	void ( *setCVar )( const char *cvar, const char *value );
-	void ( *drawTextWithCursor )( float x, float y, int font, float scale, vec4_t color, const char *text, int cursorPos, char cursor, int limit, int style );
+	void ( *drawTextWithCursor )( float x, float y, int font, float scale, vec4_t color, const char *text, int cursorPos, char cursor, int limit, int style, scralign_t align );	// Knightmare changed
 	void ( *setOverstrikeMode )( qboolean b );
 	qboolean ( *getOverstrikeMode )();
 	void ( *startLocalSound )( sfxHandle_t sfx, int channelNum );
@@ -406,6 +407,8 @@ typedef struct {
 
 	float yscale;
 	float xscale;
+	float minscale;				// Knightmare added
+	float screenAspect;			// Knightmare added
 	float bias;
 	int realTime;
 	int frameTime;

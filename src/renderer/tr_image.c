@@ -187,13 +187,59 @@ void GL_TextureMode( const char *string ) {
 	gl_filter_min = modes[i].minimize;
 	gl_filter_max = modes[i].maximize;
 
+	// Knightmare- clamp selected anisotropy
+	if (glConfig.anisotropicAvailable)
+	{
+		if (r_ext_texture_filter_anisotropic->value > glConfig.maxAnisotropy)
+			ri.Cvar_Set("r_ext_texture_filter_anisotropic", va("%4.1f", glConfig.maxAnisotropy));
+		else if (r_ext_texture_filter_anisotropic->value < 1.0)
+			ri.Cvar_Set("r_ext_texture_filter_anisotropic", "1.0");
+	}
+
 	// change all the existing mipmap texture objects
 	for ( i = 0 ; i < tr.numImages ; i++ ) {
 		glt = tr.images[ i ];
 		if ( glt->mipmap ) {
 			GL_Bind( glt );
-			qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min );
-			qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max );
+			glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min );
+			glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max );
+
+			// Knightmare- set anisotropic filter if supported and enabled
+			if (glConfig.anisotropicAvailable && r_ext_texture_filter_anisotropic->value)
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, r_ext_texture_filter_anisotropic->integer);
+		}
+	}
+}
+
+/*
+===============
+GL_UpdateAnisoMode
+
+Knightmare added- this updates anisotropic filter mode
+===============
+*/
+void GL_UpdateAnisoMode( void ) {
+	int i;
+	image_t *glt;
+
+	if (!glConfig.anisotropicAvailable)
+		return;
+
+	// clamp selected anisotropy
+	if (r_ext_texture_filter_anisotropic->value > glConfig.maxAnisotropy)
+		ri.Cvar_Set("r_ext_texture_filter_anisotropic", va("%4.1f", glConfig.maxAnisotropy));
+	else if (r_ext_texture_filter_anisotropic->value < 1.0)
+		ri.Cvar_Set("r_ext_texture_filter_anisotropic", "1.0");
+
+	// change all the existing mipmap texture objects
+	for ( i = 0 ; i < tr.numImages ; i++ ) {
+		glt = tr.images[ i ];
+		if ( glt->mipmap ) {
+			GL_Bind( glt );
+
+		// set anisotropic filter if supported and enabled
+		if (r_ext_texture_filter_anisotropic->value)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, r_ext_texture_filter_anisotropic->integer);
 		}
 	}
 }
@@ -600,6 +646,8 @@ Upload32
 
 ===============
 */
+void QGL_Log(const char *fmt, ...);
+
 static void Upload32(   unsigned *data,
 						int width, int height,
 						qboolean mipmap,
@@ -732,6 +780,7 @@ static void Upload32(   unsigned *data,
 	// scan the texture for each channel's max values
 	// and verify if the alpha channel is being used or not
 	//
+	
 	c = width * height;
 	scan = ( (byte *)data );
 	samples = 3;
@@ -752,11 +801,33 @@ static void Upload32(   unsigned *data,
 				break;
 			}
 		}
+		const GLint ASTCBlocks[] = {
+			4,4,
+			5,4,
+			5,5,
+			6,5,
+			6,6,
+			8,5,
+			8,6,
+			8,8,
+			10,5,
+			10,6,
+			10,8,
+			10,10,
+			12,10,
+			12,12,
+			0,0
+		};
+
 		// select proper internal format
 		if ( samples == 3 ) {
-			if ( !noCompress && glConfig.textureCompression == TC_EXT_COMP_S3TC ) {
+			if (!noCompress && glConfig.textureCompression == TC_EXT_COMP_BPTC) {
 				// TODO: which format is best for which textures?
-				internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+				internalFormat = GL_COMPRESSED_RGBA_BPTC_UNORM_EXT;
+			}
+			else if ( !noCompress && glConfig.textureCompression == TC_EXT_COMP_S3TC ) {
+				// TODO: which format is best for which textures?
+				internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 			} else if ( !noCompress && glConfig.textureCompression == TC_S3TC )   {
 				internalFormat = GL_RGB4_S3TC;
 			} else if ( r_texturebits->integer == 16 )   {
@@ -768,7 +839,14 @@ static void Upload32(   unsigned *data,
 				internalFormat = 3;
 			}
 		} else if ( samples == 4 )   {
-			if ( !noCompress && glConfig.textureCompression == TC_EXT_COMP_S3TC ) {
+			if (!noCompress && glConfig.textureCompression == TC_EXT_COMP_ASTC) {
+				internalFormat = GL_COMPRESSED_RGBA_ASTC_4x4_KHR;				
+			}
+			else if (!noCompress && glConfig.textureCompression == TC_EXT_COMP_BPTC) {
+				// TODO: which format is best for which textures?
+				internalFormat = GL_COMPRESSED_RGBA_BPTC_UNORM_EXT;
+			}
+			else if ( !noCompress && glConfig.textureCompression == TC_EXT_COMP_S3TC ) {
 				// TODO: which format is best for which textures?
 				internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 			} else if ( r_texturebits->integer == 16 )   {
@@ -787,7 +865,8 @@ static void Upload32(   unsigned *data,
 	if ( ( scaled_width == width ) &&
 		 ( scaled_height == height ) ) {
 		if ( !mipmap ) {
-			qglTexImage2D( GL_TEXTURE_2D, 0, internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+			glGetError();
+			glTexImage2D( GL_TEXTURE_2D, 0, internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );			
 			*pUploadWidth = scaled_width;
 			*pUploadHeight = scaled_height;
 			*format = internalFormat;
@@ -818,41 +897,53 @@ static void Upload32(   unsigned *data,
 	*pUploadHeight = scaled_height;
 	*format = internalFormat;
 
-	qglTexImage2D( GL_TEXTURE_2D, 0, internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledBuffer );
-
+	
+	glTexImage2D( GL_TEXTURE_2D, 0, internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledBuffer );
+	
 	if ( mipmap ) {
-		int miplevel;
-
-		miplevel = 0;
-		while ( scaled_width > 1 || scaled_height > 1 )
+		
+		glGenerateMipmap(GL_TEXTURE_2D);
+		/*
 		{
-			R_MipMap( (byte *)scaledBuffer, scaled_width, scaled_height );
-			scaled_width >>= 1;
-			scaled_height >>= 1;
-			if ( scaled_width < 1 ) {
-				scaled_width = 1;
-			}
-			if ( scaled_height < 1 ) {
-				scaled_height = 1;
-			}
-			miplevel++;
+			int miplevel;
 
-			if ( r_colorMipLevels->integer ) {
-				R_BlendOverTexture( (byte *)scaledBuffer, scaled_width * scaled_height, mipBlendColors[miplevel] );
-			}
+			miplevel = 0;
+			while (scaled_width > 1 || scaled_height > 1)
+			{
+				R_MipMap((byte *)scaledBuffer, scaled_width, scaled_height);
+				scaled_width >>= 1;
+				scaled_height >>= 1;
+				if (scaled_width < 1) {
+					scaled_width = 1;
+				}
+				if (scaled_height < 1) {
+					scaled_height = 1;
+				}
+				miplevel++;
 
-			qglTexImage2D( GL_TEXTURE_2D, miplevel, internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledBuffer );
+				if (r_colorMipLevels->integer) {
+					R_BlendOverTexture((byte *)scaledBuffer, scaled_width * scaled_height, mipBlendColors[miplevel]);
+				}
+
+				glTexImage2D(GL_TEXTURE_2D, miplevel, internalFormat, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledBuffer);
+			}
 		}
+		*/
 	}
 done:
 
 	if ( mipmap ) {
-		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min );
-		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max );
-	} else
-	{
-		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min );
+		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max );
+
+		// Knightmare- set anisotropic filter if supported and enabled
+		if (glConfig.anisotropicAvailable && r_ext_texture_filter_anisotropic->value) {
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, r_ext_texture_filter_anisotropic->integer);
+		}
+	}
+	else {
+		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	}
 
 	GL_CheckErrors();
@@ -901,6 +992,10 @@ image_t *R_CreateImageExt( const char *name, const byte *pic, int width, int hei
 		noCompress = qtrue;
 	}
 
+	if (glConfig.textureCompression == TC_EXT_COMP_BPTC) {
+		noCompress = qfalse;
+	}
+
 	if ( tr.numImages == MAX_DRAWIMAGES ) {
 		ri.Error( ERR_DROP, "R_CreateImage: MAX_DRAWIMAGES hit\n" );
 	}
@@ -928,13 +1023,13 @@ image_t *R_CreateImageExt( const char *name, const byte *pic, int width, int hei
 	image->wrapClampMode = glWrapClampMode;
 
 	// lightmaps are always allocated on TMU 1
-	if ( qglActiveTextureARB && isLightmap ) {
+	if ( glActiveTextureARB && isLightmap ) {
 		image->TMU = 1;
 	} else {
 		image->TMU = 0;
 	}
 
-	if ( qglActiveTextureARB ) {
+	if ( glActiveTextureARB ) {
 		GL_SelectTexture( image->TMU );
 	}
 
@@ -951,10 +1046,10 @@ image_t *R_CreateImageExt( const char *name, const byte *pic, int width, int hei
 			  &image->uploadHeight,
 			  noCompress );
 
-	qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, glWrapClampMode );
-	qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, glWrapClampMode );
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, glWrapClampMode );
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, glWrapClampMode );
 
-	qglBindTexture( GL_TEXTURE_2D, 0 );
+	glBindTexture( GL_TEXTURE_2D, 0 );
 
 	if ( image->TMU == 1 ) {
 		GL_SelectTexture( 0 );
@@ -2230,7 +2325,7 @@ static void R_CreateFogImage( void ) {
 	borderColor[2] = 1.0;
 	borderColor[3] = 1;
 
-	qglTexParameterfv( GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor );
+	glTexParameterfv( GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor );
 }
 
 /*
@@ -2423,7 +2518,7 @@ void R_DeleteTextures( void ) {
 	int i;
 
 	for ( i = 0; i < tr.numImages ; i++ ) {
-		qglDeleteTextures( 1, &tr.images[i]->texnum );
+		glDeleteTextures( 1, &tr.images[i]->texnum );
 	}
 	memset( tr.images, 0, sizeof( tr.images ) );
 	// Ridah
@@ -2431,14 +2526,14 @@ void R_DeleteTextures( void ) {
 	// done.
 
 	memset( glState.currenttextures, 0, sizeof( glState.currenttextures ) );
-	if ( qglBindTexture ) {
-		if ( qglActiveTextureARB ) {
+	if ( glBindTexture ) {
+		if ( glActiveTextureARB ) {
 			GL_SelectTexture( 1 );
-			qglBindTexture( GL_TEXTURE_2D, 0 );
+			glBindTexture( GL_TEXTURE_2D, 0 );
 			GL_SelectTexture( 0 );
-			qglBindTexture( GL_TEXTURE_2D, 0 );
+			glBindTexture( GL_TEXTURE_2D, 0 );
 		} else {
-			qglBindTexture( GL_TEXTURE_2D, 0 );
+			glBindTexture( GL_TEXTURE_2D, 0 );
 		}
 	}
 }
@@ -3499,19 +3594,19 @@ void R_PurgeImage( image_t *image ) {
 
 	texnumImages[image->texnum - 1024] = NULL;
 
-	qglDeleteTextures( 1, &image->texnum );
+	glDeleteTextures( 1, &image->texnum );
 
 	R_CacheImageFree( image );
 
 	memset( glState.currenttextures, 0, sizeof( glState.currenttextures ) );
-	if ( qglBindTexture ) {
-		if ( qglActiveTextureARB ) {
+	if ( glBindTexture ) {
+		if ( glActiveTextureARB ) {
 			GL_SelectTexture( 1 );
-			qglBindTexture( GL_TEXTURE_2D, 0 );
+			glBindTexture( GL_TEXTURE_2D, 0 );
 			GL_SelectTexture( 0 );
-			qglBindTexture( GL_TEXTURE_2D, 0 );
+			glBindTexture( GL_TEXTURE_2D, 0 );
 		} else {
-			qglBindTexture( GL_TEXTURE_2D, 0 );
+			glBindTexture( GL_TEXTURE_2D, 0 );
 		}
 	}
 }
@@ -3582,14 +3677,14 @@ void R_BackupImages( void ) {
 	tr.numImages = 0;
 
 	memset( glState.currenttextures, 0, sizeof( glState.currenttextures ) );
-	if ( qglBindTexture ) {
-		if ( qglActiveTextureARB ) {
+	if ( glBindTexture ) {
+		if ( glActiveTextureARB ) {
 			GL_SelectTexture( 1 );
-			qglBindTexture( GL_TEXTURE_2D, 0 );
+			glBindTexture( GL_TEXTURE_2D, 0 );
 			GL_SelectTexture( 0 );
-			qglBindTexture( GL_TEXTURE_2D, 0 );
+			glBindTexture( GL_TEXTURE_2D, 0 );
 		} else {
-			qglBindTexture( GL_TEXTURE_2D, 0 );
+			glBindTexture( GL_TEXTURE_2D, 0 );
 		}
 	}
 }

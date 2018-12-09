@@ -80,6 +80,8 @@ qboolean Item_Bind_HandleKey( itemDef_t *item, int key, qboolean down );
 itemDef_t *Menu_SetPrevCursorItem( menuDef_t *menu );
 itemDef_t *Menu_SetNextCursorItem( menuDef_t *menu );
 static qboolean Menu_OverActiveItem( menuDef_t *menu, float x, float y );
+void AdjustFrom640( float *x, float *y, float *w, float *h, scralign_t align );	// Knightmare added prototype
+float GetScaleForAlign ( qboolean isY, scralign_t align );	// Knightmare added prototype
 
 #ifdef CGAME
 #define MEM_POOL_SIZE  128 * 1024
@@ -340,7 +342,8 @@ void PC_SourceWarning( int handle, char *format, ... ) {
 	static char string[4096];
 
 	va_start( argptr, format );
-	vsprintf( string, format, argptr );
+//	vsprintf( string, format, argptr );
+	Q_vsnprintf( string, sizeof(string), format, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	filename[0] = '\0';
@@ -362,7 +365,8 @@ void PC_SourceError( int handle, char *format, ... ) {
 	static char string[4096];
 
 	va_start( argptr, format );
-	vsprintf( string, format, argptr );
+//	vsprintf( string, format, argptr );
+	Q_vsnprintf( string, sizeof(string), format, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	filename[0] = '\0';
@@ -557,6 +561,59 @@ qboolean PC_Rect_Parse( int handle, rectDef_t *r ) {
 
 /*
 =================
+PC_ScrAlign_Parse
+Knightmare added
+=================
+*/
+qboolean PC_ScrAlign_Parse( int handle, rectDef_t *r ) {
+	pc_token_t token;
+
+	if ( !trap_PC_ReadToken( handle, &token ) ) {
+		return qfalse;
+	}
+
+	if ( !Q_strcasecmp(token.string, "stretch") )
+		r->scrAlign = ALIGN_STRETCH;
+	else if ( !Q_strcasecmp(token.string, "stretchLeftCenter") )
+		r->scrAlign = ALIGN_STRETCH_LEFT_CENTER;
+	else if ( !Q_strcasecmp(token.string, "stretchRightCenter") )
+		r->scrAlign = ALIGN_STRETCH_RIGHT_CENTER;
+	else if ( !Q_strcasecmp(token.string, "stretchAll") )
+		r->scrAlign = ALIGN_STRETCH_ALL;
+	else if ( !Q_strcasecmp(token.string, "center") )
+		r->scrAlign = ALIGN_CENTER;
+	else if ( !Q_strcasecmp(token.string, "letterbox") )
+		r->scrAlign = ALIGN_LETTERBOX;
+	else if ( !Q_strcasecmp(token.string, "top") )
+		r->scrAlign = ALIGN_TOP;
+	else if ( !Q_strcasecmp(token.string, "bottom") )
+		r->scrAlign = ALIGN_BOTTOM;
+	else if ( !Q_strcasecmp(token.string, "right") )
+		r->scrAlign = ALIGN_RIGHT;
+	else if ( !Q_strcasecmp(token.string, "left") )
+		r->scrAlign = ALIGN_LEFT;
+	else if ( !Q_strcasecmp(token.string, "topRight") )
+		r->scrAlign = ALIGN_TOPRIGHT;
+	else if ( !Q_strcasecmp(token.string, "topLeft") )
+		r->scrAlign = ALIGN_TOPLEFT;
+	else if ( !Q_strcasecmp(token.string, "bottomRight") )
+		r->scrAlign = ALIGN_BOTTOMRIGHT;
+	else if ( !Q_strcasecmp(token.string, "bottomLeft") )
+		r->scrAlign = ALIGN_BOTTOMLEFT;
+	else if ( !Q_strcasecmp(token.string, "topStretch") )
+		r->scrAlign = ALIGN_TOP_STRETCH;
+	else if ( !Q_strcasecmp(token.string, "bottomStretch") )
+		r->scrAlign = ALIGN_BOTTOM_STRETCH;
+	else {
+		PC_SourceWarning (handle, va("unknown align type '%s' ", token.string));
+		r->scrAlign = ALIGN_CENTER;
+		return qfalse;
+	}
+	return qtrue;
+}
+
+/*
+=================
 String_Parse
 =================
 */
@@ -666,7 +723,7 @@ void Init_Display( displayContextDef_t *dc ) {
 void GradientBar_Paint( rectDef_t *rect, vec4_t color ) {
 	// gradient bar takes two paints
 	DC->setColor( color );
-	DC->drawHandlePic( rect->x, rect->y, rect->w, rect->h, DC->Assets.gradientBar );
+	DC->drawHandlePic( rect->x, rect->y, rect->w, rect->h, DC->Assets.gradientBar, rect->scrAlign );
 	DC->setColor( NULL );
 }
 
@@ -717,7 +774,7 @@ void Window_Paint( Window *w, float fadeAmount, float fadeClamp, float fadeCycle
 
 	if ( debugMode ) {
 		color[0] = color[1] = color[2] = color[3] = 1;
-		DC->drawRect( w->rect.x, w->rect.y, w->rect.w, w->rect.h, 1, color );
+		DC->drawRect( w->rect.x, w->rect.y, w->rect.w, w->rect.h, 1, color, w->rect.scrAlign );
 	}
 
 	if ( w == NULL || ( w->style == 0 && w->border == 0 ) ) {
@@ -736,10 +793,10 @@ void Window_Paint( Window *w, float fadeAmount, float fadeClamp, float fadeCycle
 		if ( w->background ) {
 			Fade( &w->flags, &w->backColor[3], fadeClamp, &w->nextTime, fadeCycle, qtrue, fadeAmount );
 			DC->setColor( w->backColor );
-			DC->drawHandlePic( fillRect.x, fillRect.y, fillRect.w, fillRect.h, w->background );
+			DC->drawHandlePic( fillRect.x, fillRect.y, fillRect.w, fillRect.h, w->background, fillRect.scrAlign );
 			DC->setColor( NULL );
 		} else {
-			DC->fillRect( fillRect.x, fillRect.y, fillRect.w, fillRect.h, w->backColor );
+			DC->fillRect( fillRect.x, fillRect.y, fillRect.w, fillRect.h, w->backColor, fillRect.scrAlign );
 		}
 	} else if ( w->style == WINDOW_STYLE_GRADIENT ) {
 		GradientBar_Paint( &fillRect, w->backColor );
@@ -748,12 +805,12 @@ void Window_Paint( Window *w, float fadeAmount, float fadeClamp, float fadeCycle
 		if ( w->flags & WINDOW_FORECOLORSET ) {
 			DC->setColor( w->foreColor );
 		}
-		DC->drawHandlePic( fillRect.x, fillRect.y, fillRect.w, fillRect.h, w->background );
+		DC->drawHandlePic( fillRect.x, fillRect.y, fillRect.w, fillRect.h, w->background, fillRect.scrAlign );
 		DC->setColor( NULL );
 	} else if ( w->style == WINDOW_STYLE_TEAMCOLOR ) {
 		if ( DC->getTeamColor ) {
 			DC->getTeamColor( &color );
-			DC->fillRect( fillRect.x, fillRect.y, fillRect.w, fillRect.h, color );
+			DC->fillRect( fillRect.x, fillRect.y, fillRect.w, fillRect.h, color, fillRect.scrAlign );
 		}
 	} else if ( w->style == WINDOW_STYLE_CINEMATIC ) {
 		if ( w->cinematic == -1 ) {
@@ -782,19 +839,19 @@ void Window_Paint( Window *w, float fadeAmount, float fadeClamp, float fadeCycle
 				color[0] = color[1] = .5;
 			}
 			color[3] = 1;
-			DC->drawRect( w->rect.x, w->rect.y, w->rect.w, w->rect.h, w->borderSize, color );
+			DC->drawRect( w->rect.x, w->rect.y, w->rect.w, w->rect.h, w->borderSize, color, w->rect.scrAlign );
 		} else {
-			DC->drawRect( w->rect.x, w->rect.y, w->rect.w, w->rect.h, w->borderSize, w->borderColor );
+			DC->drawRect( w->rect.x, w->rect.y, w->rect.w, w->rect.h, w->borderSize, w->borderColor, w->rect.scrAlign );
 		}
 	} else if ( w->border == WINDOW_BORDER_HORZ ) {
 		// top/bottom
 		DC->setColor( w->borderColor );
-		DC->drawTopBottom( w->rect.x, w->rect.y, w->rect.w, w->rect.h, w->borderSize );
+		DC->drawTopBottom( w->rect.x, w->rect.y, w->rect.w, w->rect.h, w->borderSize, w->rect.scrAlign );
 		DC->setColor( NULL );
 	} else if ( w->border == WINDOW_BORDER_VERT ) {
 		// left right
 		DC->setColor( w->borderColor );
-		DC->drawSides( w->rect.x, w->rect.y, w->rect.w, w->rect.h, w->borderSize );
+		DC->drawSides( w->rect.x, w->rect.y, w->rect.w, w->rect.h, w->borderSize, w->rect.scrAlign );
 		DC->setColor( NULL );
 	} else if ( w->border == WINDOW_BORDER_KCGRADIENT ) {
 		// this is just two gradient bars along each horz edge
@@ -911,9 +968,18 @@ qboolean IsVisible( int flags ) {
 	return ( flags & WINDOW_VISIBLE && !( flags & WINDOW_FADINGOUT ) );
 }
 
+// Knightmare- reworked this to scale rect coords
 qboolean Rect_ContainsPoint( rectDef_t *rect, float x, float y ) {
+	float	rx1, ry1, rx2, ry2;	// Knightmare added
 	if ( rect ) {
-		if ( x > rect->x && x < rect->x + rect->w && y > rect->y && y < rect->y + rect->h ) {
+		rx1 = rect->x;
+		ry1 = rect->y;
+		rx2 = rect->x + rect->w;
+		ry2 = rect->y + rect->h;
+		AdjustFrom640 (&rx1, &ry1, NULL, NULL, rect->scrAlign);
+		AdjustFrom640 (&rx2, &ry2, NULL, NULL, rect->scrAlign);
+		if ( x > rx1 && x < rx2 && y > ry1 && y < ry2 ) {
+	//	if ( x > rect->x && x < rect->x + rect->w && y > rect->y && y < rect->y + rect->h ) {
 			return qtrue;
 		}
 	}
@@ -1604,11 +1670,11 @@ qboolean Item_EnableShowViaCvar( itemDef_t *item, int flag ) {
 
 // will optionaly set focus to this item
 qboolean Item_SetFocus( itemDef_t *item, float x, float y ) {
-	int i;
-	itemDef_t *oldFocus;
-	sfxHandle_t *sfx = &DC->Assets.itemFocusSound;
-	qboolean playSound = qfalse;
-	menuDef_t *parent = NULL;
+	int			i;
+	itemDef_t	*oldFocus;
+	sfxHandle_t	*sfx = &DC->Assets.itemFocusSound;
+	qboolean	playSound = qfalse;
+	menuDef_t	*parent = NULL;
 	// sanity check, non-null, not a decoration and does not already have the focus
 	if ( item == NULL || item->window.flags & WINDOW_DECORATION || item->window.flags & WINDOW_HASFOCUS || !( item->window.flags & WINDOW_VISIBLE ) ) {
 		return qfalse;
@@ -1671,9 +1737,9 @@ qboolean Item_SetFocus( itemDef_t *item, float x, float y ) {
 }
 
 int Item_ListBox_MaxScroll( itemDef_t *item ) {
-	listBoxDef_t *listPtr = (listBoxDef_t*)item->typeData;
-	int count = DC->feederCount( item->special );
-	int max;
+	listBoxDef_t	*listPtr = (listBoxDef_t*)item->typeData;
+	int				count = DC->feederCount( item->special );
+	int				max;
 
 	if ( item->window.flags & WINDOW_HORIZONTAL ) {
 		max = count - ( item->window.rect.w / listPtr->elementWidth ) + 1;
@@ -1687,60 +1753,86 @@ int Item_ListBox_MaxScroll( itemDef_t *item ) {
 }
 
 int Item_ListBox_ThumbPosition( itemDef_t *item ) {
-	float max, pos, size;
-	listBoxDef_t *listPtr = (listBoxDef_t*)item->typeData;
+	float			max, pos, size;
+	listBoxDef_t	*listPtr = (listBoxDef_t*)item->typeData;
 
 	max = Item_ListBox_MaxScroll( item );
 	if ( item->window.flags & WINDOW_HORIZONTAL ) {
 		size = item->window.rect.w - ( SCROLLBAR_SIZE * 2 ) - 2;
 		if ( max > 0 ) {
-			pos = ( size - SCROLLBAR_SIZE ) / (float) max;
+			pos = (float)(size - SCROLLBAR_SIZE) / (float) max;
 		} else {
 			pos = 0;
 		}
-		pos *= listPtr->startPos;
+		pos *= (float)listPtr->startPos;
 		return item->window.rect.x + 1 + SCROLLBAR_SIZE + pos;
 	} else {
 		size = item->window.rect.h - ( SCROLLBAR_SIZE * 2 ) - 2;
 		if ( max > 0 ) {
-			pos = ( size - SCROLLBAR_SIZE ) / (float) max;
+			pos = (float)(size - SCROLLBAR_SIZE) / (float) max;
 		} else {
 			pos = 0;
 		}
-		pos *= listPtr->startPos;
+		pos *= (float)listPtr->startPos;
 		return item->window.rect.y + 1 + SCROLLBAR_SIZE + pos;
 	}
 }
 
 int Item_ListBox_ThumbDrawPosition( itemDef_t *item ) {
-	int min, max;
+	int		min, max, tmpx, tmpy;	// Knightmare added
+	float	rx1, ry1, rx2, ry2, ofsx, ofsy;	// Knightmare added
+	float	xscale, yscale;
 
 	if ( itemCapture == item ) {
+		// Knightmare- redone for menu scaling
+		tmpx = item->window.rect.x + SCROLLBAR_SIZE + 1;
+		tmpy = item->window.rect.y + SCROLLBAR_SIZE + 1;
+		rx1 = item->window.rect.x + SCROLLBAR_SIZE + 1;
+		ry1 = item->window.rect.y + SCROLLBAR_SIZE + 1;
+		rx2 = item->window.rect.x + item->window.rect.w - 2 * SCROLLBAR_SIZE - 1;
+		ry2 = item->window.rect.y + item->window.rect.h - 2 * SCROLLBAR_SIZE - 1;
+		ofsx = ofsy = SCROLLBAR_SIZE / 2;
+		AdjustFrom640( &rx1, &ry1, NULL, NULL, item->window.rect.scrAlign );
+		AdjustFrom640( &rx2, &ry2, NULL, NULL, item->window.rect.scrAlign );
+		AdjustFrom640( NULL, NULL, &ofsx, &ofsy, item->window.rect.scrAlign );
+		xscale = GetScaleForAlign( qfalse, item->window.rect.scrAlign );
+		yscale = GetScaleForAlign( qtrue, item->window.rect.scrAlign );
+
 		if ( item->window.flags & WINDOW_HORIZONTAL ) {
-			min = item->window.rect.x + SCROLLBAR_SIZE + 1;
-			max = item->window.rect.x + item->window.rect.w - 2 * SCROLLBAR_SIZE - 1;
-			if ( DC->cursorx >= min + SCROLLBAR_SIZE / 2 && DC->cursorx <= max + SCROLLBAR_SIZE / 2 ) {
-				return DC->cursorx - SCROLLBAR_SIZE / 2;
-			} else {
-				return Item_ListBox_ThumbPosition( item );
+		//	min = item->window.rect.x + SCROLLBAR_SIZE + 1;
+		//	max = item->window.rect.x + item->window.rect.w - 2 * SCROLLBAR_SIZE - 1;
+		//	if ( DC->cursorx >= min + SCROLLBAR_SIZE / 2 && DC->cursorx <= max + SCROLLBAR_SIZE / 2 ) {
+			min = rx1 + ofsx;	max = rx2 + ofsx;
+			if ( DC->cursorx >= min && DC->cursorx <= max ) {
+			//	return DC->cursorx - SCROLLBAR_SIZE / 2;
+				return tmpx + (int)((DC->cursorx - rx1) / xscale) - SCROLLBAR_SIZE / 2;
 			}
-		} else {
-			min = item->window.rect.y + SCROLLBAR_SIZE + 1;
-			max = item->window.rect.y + item->window.rect.h - 2 * SCROLLBAR_SIZE - 1;
-			if ( DC->cursory >= min + SCROLLBAR_SIZE / 2 && DC->cursory <= max + SCROLLBAR_SIZE / 2 ) {
-				return DC->cursory - SCROLLBAR_SIZE / 2;
-			} else {
+			else {
 				return Item_ListBox_ThumbPosition( item );
 			}
 		}
-	} else {
+		else {
+		//	min = item->window.rect.y + SCROLLBAR_SIZE + 1;
+		//	max = item->window.rect.y + item->window.rect.h - 2 * SCROLLBAR_SIZE - 1;
+		//	if ( DC->cursory >= min + SCROLLBAR_SIZE / 2 && DC->cursory <= max + SCROLLBAR_SIZE / 2 ) {
+			min = ry1 + ofsy;	max = ry2 + ofsy;
+			if ( DC->cursory >= min && DC->cursory <= max ) {
+			//	return DC->cursory - SCROLLBAR_SIZE / 2;
+				return tmpy + (int)((DC->cursory - ry1) / yscale) - SCROLLBAR_SIZE / 2;
+			}
+			else {
+				return Item_ListBox_ThumbPosition( item );
+			}
+		}
+	}
+	else {
 		return Item_ListBox_ThumbPosition( item );
 	}
 }
 
 float Item_Slider_ThumbPosition( itemDef_t *item ) {
-	float value, range, x;
-	editFieldDef_t *editDef = item->typeData;
+	float			value, range, x;
+	editFieldDef_t	*editDef = item->typeData;
 
 	if ( item->text ) {
 		x = item->textRect.x + item->textRect.w + 8;
@@ -1778,7 +1870,7 @@ int Item_Slider_OverSlider( itemDef_t *item, float x, float y ) {
 	r.y = item->window.rect.y - 2;
 	r.w = SLIDER_THUMB_WIDTH;
 	r.h = SLIDER_THUMB_HEIGHT;
-
+	r.scrAlign = item->window.rect.scrAlign;	// Knightmare added
 	if ( Rect_ContainsPoint( &r, x, y ) ) {
 		return WINDOW_LB_THUMB;
 	}
@@ -1798,6 +1890,7 @@ int Item_ListBox_OverLB( itemDef_t *item, float x, float y ) {
 		r.x = item->window.rect.x;
 		r.y = item->window.rect.y + item->window.rect.h - SCROLLBAR_SIZE;
 		r.h = r.w = SCROLLBAR_SIZE;
+		r.scrAlign = item->window.rect.scrAlign;	// Knightmare added
 		if ( Rect_ContainsPoint( &r, x, y ) ) {
 			return WINDOW_LB_LEFTARROW;
 		}
@@ -1826,6 +1919,7 @@ int Item_ListBox_OverLB( itemDef_t *item, float x, float y ) {
 		r.x = item->window.rect.x + item->window.rect.w - SCROLLBAR_SIZE;
 		r.y = item->window.rect.y;
 		r.h = r.w = SCROLLBAR_SIZE;
+		r.scrAlign = item->window.rect.scrAlign;	// Knightmare added
 		if ( Rect_ContainsPoint( &r, x, y ) ) {
 			return WINDOW_LB_LEFTARROW;
 		}
@@ -1854,8 +1948,9 @@ int Item_ListBox_OverLB( itemDef_t *item, float x, float y ) {
 
 
 void Item_ListBox_MouseEnter( itemDef_t *item, float x, float y ) {
-	rectDef_t r;
-	listBoxDef_t *listPtr = (listBoxDef_t*)item->typeData;
+	rectDef_t		r;
+	listBoxDef_t	*listPtr = (listBoxDef_t*)item->typeData;
+	float			rx, ry, rw, rh;	// Knightmare added
 
 	item->window.flags &= ~( WINDOW_LB_LEFTARROW | WINDOW_LB_RIGHTARROW | WINDOW_LB_THUMB | WINDOW_LB_PGUP | WINDOW_LB_PGDN );
 	item->window.flags |= Item_ListBox_OverLB( item, x, y );
@@ -1868,8 +1963,15 @@ void Item_ListBox_MouseEnter( itemDef_t *item, float x, float y ) {
 				r.y = item->window.rect.y;
 				r.h = item->window.rect.h - SCROLLBAR_SIZE;
 				r.w = item->window.rect.w - listPtr->drawPadding;
+				r.scrAlign = item->window.rect.scrAlign;	// Knightmare added
 				if ( Rect_ContainsPoint( &r, x, y ) ) {
-					listPtr->cursorPos =  (int)( ( x - r.x ) / listPtr->elementWidth )  + listPtr->startPos;
+					// Knightmare- menu scaling
+				//	listPtr->cursorPos = (int)( ( x - r.x ) / listPtr->elementWidth ) + listPtr->startPos;
+					rx = r.x;
+					rw = listPtr->elementWidth;
+					AdjustFrom640( &rx, NULL, &rw, NULL, item->window.rect.scrAlign );
+					listPtr->cursorPos = (int)( ( x - rx) / rw ) + listPtr->startPos;
+					// end Knightmare
 					if ( listPtr->cursorPos >= listPtr->endPos ) {
 						listPtr->cursorPos = listPtr->endPos;
 					}
@@ -1883,8 +1985,15 @@ void Item_ListBox_MouseEnter( itemDef_t *item, float x, float y ) {
 		r.y = item->window.rect.y;
 		r.w = item->window.rect.w - SCROLLBAR_SIZE;
 		r.h = item->window.rect.h - listPtr->drawPadding;
+		r.scrAlign = item->window.rect.scrAlign;	// Knightmare added
 		if ( Rect_ContainsPoint( &r, x, y ) ) {
-			listPtr->cursorPos =  (int)( ( y - 2 - r.y ) / listPtr->elementHeight )  + listPtr->startPos;
+			// Knightmare- menu scaling
+		//	listPtr->cursorPos =  (int)( ( y - 2 - r.y ) / listPtr->elementHeight )  + listPtr->startPos;
+			ry = 2 + r.y;
+			rh = listPtr->elementHeight;
+			AdjustFrom640( NULL, &ry, NULL, &rh, item->window.rect.scrAlign );
+			listPtr->cursorPos =  (int)( ( y - ry ) / rh )  + listPtr->startPos;
+			// end Knightmare
 			if ( listPtr->cursorPos > listPtr->endPos ) {
 				listPtr->cursorPos = listPtr->endPos;
 			}
@@ -1893,7 +2002,7 @@ void Item_ListBox_MouseEnter( itemDef_t *item, float x, float y ) {
 }
 
 void Item_MouseEnter( itemDef_t *item, float x, float y ) {
-	rectDef_t r;
+	rectDef_t	r;
 	if ( item ) {
 		r = item->textRect;
 		r.y -= r.h;
@@ -1977,9 +2086,9 @@ qboolean Item_OwnerDraw_HandleKey( itemDef_t *item, int key ) {
 }
 
 qboolean Item_ListBox_HandleKey( itemDef_t *item, int key, qboolean down, qboolean force ) {
-	listBoxDef_t *listPtr = (listBoxDef_t*)item->typeData;
-	int count = DC->feederCount( item->special );
-	int max, viewmax;
+	listBoxDef_t	*listPtr = (listBoxDef_t*)item->typeData;
+	int				count = DC->feederCount( item->special );
+	int				max, viewmax;
 
 	if ( force || ( Rect_ContainsPoint( &item->window.rect, DC->cursorx, DC->cursory ) && item->window.flags & WINDOW_HASFOCUS ) ) {
 		max = Item_ListBox_MaxScroll( item );
@@ -2251,11 +2360,15 @@ const char *Item_Multi_Setting( itemDef_t *item ) {
 	return "";
 }
 
-qboolean Item_Multi_HandleKey( itemDef_t *item, int key ) {
+qboolean Item_Multi_HandleKey( itemDef_t *item, int key )
+{
 	multiDef_t *multiPtr = (multiDef_t*)item->typeData;
-	if ( multiPtr ) {
-		if ( Rect_ContainsPoint( &item->window.rect, DC->cursorx, DC->cursory ) && item->window.flags & WINDOW_HASFOCUS && item->cvar ) {
-			if ( key == K_MOUSE1 || key == K_ENTER || key == K_MOUSE2 || key == K_MOUSE3 ) {
+	if ( multiPtr )
+	{
+		if ( Rect_ContainsPoint( &item->window.rect, DC->cursorx, DC->cursory ) && item->window.flags & WINDOW_HASFOCUS && item->cvar )
+		{
+			if ( key == K_MOUSE1 || key == K_ENTER /*|| key == K_MOUSE2*/ || key == K_MOUSE3 )
+			{
 				int current = Item_Multi_FindCvarByValue( item ) + 1;
 				int max = Item_Multi_CountSettings( item );
 				if ( current < 0 || current >= max ) {
@@ -2263,7 +2376,8 @@ qboolean Item_Multi_HandleKey( itemDef_t *item, int key ) {
 				}
 				if ( multiPtr->strDef ) {
 					DC->setCVar( item->cvar, multiPtr->cvarStr[current] );
-				} else {
+				} else
+				{
 					float value = multiPtr->cvarValue[current];
 					if ( ( (float)( (int) value ) ) == value ) {
 						DC->setCVar( item->cvar, va( "%i", (int) value ) );
@@ -2273,6 +2387,28 @@ qboolean Item_Multi_HandleKey( itemDef_t *item, int key ) {
 				}
 				return qtrue;
 			}
+			// Knightmare- Mouse2 decrements cvarlist items
+			else if ( key == K_MOUSE2 )
+			{
+				int current = Item_Multi_FindCvarByValue( item ) - 1;
+				int max = Item_Multi_CountSettings( item );
+				if ( current < 0 || current >= max ) {
+					current = max - 1;
+				}
+				if ( multiPtr->strDef ) {
+					DC->setCVar( item->cvar, multiPtr->cvarStr[current] );
+				} else
+				{
+					float value = multiPtr->cvarValue[current];
+					if ( ( (float)( (int) value ) ) == value ) {
+						DC->setCVar( item->cvar, va( "%i", (int) value ) );
+					} else {
+						DC->setCVar( item->cvar, va( "%f", value ) );
+					}
+				}
+				return qtrue;
+			}
+			// end Knightmare
 		}
 	}
 	return qfalse;
@@ -2454,11 +2590,12 @@ static void Scroll_ListBox_AutoFunc( void *p ) {
 }
 
 static void Scroll_ListBox_ThumbFunc( void *p ) {
-	scrollInfo_t *si = (scrollInfo_t*)p;
-	rectDef_t r;
-	int pos, max;
-
-	listBoxDef_t *listPtr = (listBoxDef_t*)si->item->typeData;
+	scrollInfo_t	*si = (scrollInfo_t*)p;
+	listBoxDef_t	*listPtr = (listBoxDef_t*)si->item->typeData;
+	rectDef_t		r;
+	int				pos, max;
+	float			rx, ry, rw, rh;	// Knightmare added
+	
 	if ( si->item->window.flags & WINDOW_HORIZONTAL ) {
 		if ( DC->cursorx == si->xStart ) {
 			return;
@@ -2468,8 +2605,13 @@ static void Scroll_ListBox_ThumbFunc( void *p ) {
 		r.h = SCROLLBAR_SIZE;
 		r.w = si->item->window.rect.w - ( SCROLLBAR_SIZE * 2 ) - 2;
 		max = Item_ListBox_MaxScroll( si->item );
-		//
-		pos = ( DC->cursorx - r.x - SCROLLBAR_SIZE / 2 ) * max / ( r.w - SCROLLBAR_SIZE );
+		// Knightmare- menu scaling
+	//	pos = ( DC->cursorx - r.x - SCROLLBAR_SIZE / 2 ) * max / ( r.w - SCROLLBAR_SIZE );
+		rx = r.x + SCROLLBAR_SIZE / 2;
+		rw = r.w - SCROLLBAR_SIZE;
+		AdjustFrom640( &rx, NULL, &rw, NULL, si->item->window.rectClient.scrAlign );
+		pos = ( DC->cursorx - rx ) * max / ( rw );
+		// end Knightmare
 		if ( pos < 0 ) {
 			pos = 0;
 		} else if ( pos > max )     {
@@ -2477,15 +2619,21 @@ static void Scroll_ListBox_ThumbFunc( void *p ) {
 		}
 		listPtr->startPos = pos;
 		si->xStart = DC->cursorx;
-	} else if ( DC->cursory != si->yStart )     {
+	}
+	else if ( DC->cursory != si->yStart )     {
 
 		r.x = si->item->window.rect.x + si->item->window.rect.w - SCROLLBAR_SIZE - 1;
 		r.y = si->item->window.rect.y + SCROLLBAR_SIZE + 1;
 		r.h = si->item->window.rect.h - ( SCROLLBAR_SIZE * 2 ) - 2;
 		r.w = SCROLLBAR_SIZE;
 		max = Item_ListBox_MaxScroll( si->item );
-		//
-		pos = ( DC->cursory - r.y - SCROLLBAR_SIZE / 2 ) * max / ( r.h - SCROLLBAR_SIZE );
+		// Knightmare- menu scaling
+	//	pos = ( DC->cursory - r.y - SCROLLBAR_SIZE / 2 ) * max / ( r.h - SCROLLBAR_SIZE );
+		ry = r.y + SCROLLBAR_SIZE / 2;
+		rh = r.h - SCROLLBAR_SIZE;
+		AdjustFrom640( NULL, &ry, NULL, &rh, si->item->window.rectClient.scrAlign );
+		pos = ( DC->cursory - ry ) * max / ( rh );
+		// end Knightmare
 		if ( pos < 0 ) {
 			pos = 0;
 		} else if ( pos > max )     {
@@ -2512,25 +2660,29 @@ static void Scroll_ListBox_ThumbFunc( void *p ) {
 }
 
 static void Scroll_Slider_ThumbFunc( void *p ) {
-	float x, value, cursorx;
-	scrollInfo_t *si = (scrollInfo_t*)p;
-	editFieldDef_t *editDef = si->item->typeData;
+	float			x, value, cursorx, sw;	//  Knightmare added
+	scrollInfo_t	*si = (scrollInfo_t*)p;
+	editFieldDef_t	*editDef = si->item->typeData;
 
 	if ( si->item->text ) {
 		x = si->item->textRect.x + si->item->textRect.w + 8;
 	} else {
 		x = si->item->window.rect.x;
 	}
+	// Knightmare- scaling
+	sw = SLIDER_WIDTH;
+	AdjustFrom640( &x, NULL, &sw, NULL, si->item->window.rectClient.scrAlign );
 
 	cursorx = DC->cursorx;
 
 	if ( cursorx < x ) {
 		cursorx = x;
-	} else if ( cursorx > x + SLIDER_WIDTH ) {
-		cursorx = x + SLIDER_WIDTH;
+	}
+	else if ( cursorx > x + sw ) {	// Knightmare changed, was SLIDER_WIDTH
+		cursorx = x + sw;	// Knightmare changed, was SLIDER_WIDTH
 	}
 	value = cursorx - x;
-	value /= SLIDER_WIDTH;
+	value /= sw;	// Knightmare changed, was SLIDER_WIDTH
 	value *= ( editDef->maxVal - editDef->minVal );
 	value += editDef->minVal;
 	DC->setCVar( si->item->cvar, va( "%f", value ) );
@@ -2589,7 +2741,7 @@ void Item_StopCapture( itemDef_t *item ) {
 }
 
 qboolean Item_Slider_HandleKey( itemDef_t *item, int key, qboolean down ) {
-	float x, value, width, work;
+	float	x, value, width, work, rx, rw;	//  Knightmare added
 
 	//DC->Print("slider handle key\n");
 	if ( item->window.flags & WINDOW_HASFOCUS && item->cvar && Rect_ContainsPoint( &item->window.rect, DC->cursorx, DC->cursory ) ) {
@@ -2612,8 +2764,15 @@ qboolean Item_Slider_HandleKey( itemDef_t *item, int key, qboolean down ) {
 				testRect.w = ( SLIDER_WIDTH + (float)SLIDER_THUMB_WIDTH / 2 );
 				//DC->Print("slider w: %f\n", testRect.w);
 				if ( Rect_ContainsPoint( &testRect, DC->cursorx, DC->cursory ) ) {
-					work = DC->cursorx - x;
-					value = work / width;
+					// Knightmare- menu scaling
+				//	work = DC->cursorx - x;
+				//	value = work / width;
+					rx = x;
+					rw = width;
+					AdjustFrom640( &rx, NULL, &rw, NULL, item->window.rectClient.scrAlign);
+					work = DC->cursorx - rx;
+					value = work / rw;
+					// end Knightmare
 					value *= ( editDef->maxVal - editDef->minVal );
 					// vm fuckage
 					// value = (((float)(DC->cursorx - x)/ SLIDER_WIDTH) * (editDef->maxVal - editDef->minVal));
@@ -2852,7 +3011,7 @@ void Menus_HandleOOBClick( menuDef_t *menu, int key, qboolean down ) {
 }
 
 static rectDef_t *Item_CorrectedTextRect( itemDef_t *item ) {
-	static rectDef_t rect;
+	static	rectDef_t rect;
 	memset( &rect, 0, sizeof( rectDef_t ) );
 	if ( item ) {
 		rect = item->textRect;
@@ -2864,9 +3023,9 @@ static rectDef_t *Item_CorrectedTextRect( itemDef_t *item ) {
 }
 
 void Menu_HandleKey( menuDef_t *menu, int key, qboolean down ) {
-	int i;
-	itemDef_t *item = NULL;
-	qboolean inHandler = qfalse;
+	int			i;
+	itemDef_t	*item = NULL;
+	qboolean	inHandler = qfalse;
 
 	if ( inHandler ) {
 		return;
@@ -3177,7 +3336,7 @@ void Item_Text_AutoWrapped_Paint( itemDef_t *item ) {
 				ToWindowCoords( &item->textRect.x, &item->textRect.y, &item->window );
 				//
 				buff[newLine] = '\0';
-				DC->drawText( item->textRect.x, item->textRect.y, item->font, item->textscale, color, buff, 0, 0, item->textStyle );
+				DC->drawText( item->textRect.x, item->textRect.y, item->font, item->textscale, color, buff, 0, 0, item->textStyle, item->textRect.scrAlign );
 			}
 			if ( *p == '\0' ) {
 				break;
@@ -3235,12 +3394,12 @@ void Item_Text_Wrapped_Paint( itemDef_t *item ) {
 	while ( p && *p ) {
 		strncpy( buff, start, p - start + 1 );
 		buff[p - start] = '\0';
-		DC->drawText( x, y, item->font, item->textscale, color, buff, 0, 0, item->textStyle );
+		DC->drawText( x, y, item->font, item->textscale, color, buff, 0, 0, item->textStyle, item->textRect.scrAlign );
 		y += height + 5;
 		start += p - start + 1;
 		p = strchr( p + 1, '\r' );
 	}
-	DC->drawText( x, y, item->font, item->textscale, color, start, 0, 0, item->textStyle );
+	DC->drawText( x, y, item->font, item->textscale, color, start, 0, 0, item->textStyle, item->textRect.scrAlign );
 }
 
 void Item_Text_Paint( itemDef_t *item ) {
@@ -3320,7 +3479,7 @@ void Item_Text_Paint( itemDef_t *item ) {
 //		DC->drawText(item->textRect.x - 1, item->textRect.y + 1, item->textscale * 1.02, item->window.outlineColor, textPtr, adjust);
 //	}
 
-	DC->drawText( item->textRect.x, item->textRect.y, item->font, item->textscale, color, textPtr, 0, 0, item->textStyle );
+	DC->drawText( item->textRect.x, item->textRect.y, item->font, item->textscale, color, textPtr, 0, 0, item->textStyle, item->textRect.scrAlign );
 }
 
 
@@ -3358,9 +3517,9 @@ void Item_TextField_Paint( itemDef_t *item ) {
 	offset = ( item->text && *item->text ) ? 8 : 0;
 	if ( item->window.flags & WINDOW_HASFOCUS && g_editingField ) {
 		char cursor = DC->getOverstrikeMode() ? '_' : '|';
-		DC->drawTextWithCursor( item->textRect.x + item->textRect.w + offset, item->textRect.y, item->font, item->textscale, newColor, buff + editPtr->paintOffset, item->cursorPos - editPtr->paintOffset, cursor, editPtr->maxPaintChars, item->textStyle );
+		DC->drawTextWithCursor( item->textRect.x + item->textRect.w + offset, item->textRect.y, item->font, item->textscale, newColor, buff + editPtr->paintOffset, item->cursorPos - editPtr->paintOffset, cursor, editPtr->maxPaintChars, item->textStyle, item->textRect.scrAlign );
 	} else {
-		DC->drawText( item->textRect.x + item->textRect.w + offset, item->textRect.y, item->font, item->textscale, newColor, buff + editPtr->paintOffset, 0, editPtr->maxPaintChars, item->textStyle );
+		DC->drawText( item->textRect.x + item->textRect.w + offset, item->textRect.y, item->font, item->textscale, newColor, buff + editPtr->paintOffset, 0, editPtr->maxPaintChars, item->textStyle, item->textRect.scrAlign );
 	}
 
 }
@@ -3388,9 +3547,9 @@ void Item_YesNo_Paint( itemDef_t *item ) {
 
 	if ( item->text ) {
 		Item_Text_Paint( item );
-		DC->drawText( item->textRect.x + item->textRect.w + 8, item->textRect.y, item->font, item->textscale, newColor, ( value != 0 ) ? yes_str : no_str, 0, 0, item->textStyle );
+		DC->drawText( item->textRect.x + item->textRect.w + 8, item->textRect.y, item->font, item->textscale, newColor, ( value != 0 ) ? yes_str : no_str, 0, 0, item->textStyle, item->textRect.scrAlign );
 	} else {
-		DC->drawText( item->textRect.x, item->textRect.y, item->font, item->textscale, newColor, ( value != 0 ) ? yes_str : no_str, 0, 0, item->textStyle );
+		DC->drawText( item->textRect.x, item->textRect.y, item->font, item->textscale, newColor, ( value != 0 ) ? yes_str : no_str, 0, 0, item->textStyle, item->textRect.scrAlign );
 	}
 }
 
@@ -3413,9 +3572,9 @@ void Item_Multi_Paint( itemDef_t *item ) {
 
 	if ( item->text ) {
 		Item_Text_Paint( item );
-		DC->drawText( item->textRect.x + item->textRect.w + 8, item->textRect.y, item->font, item->textscale, newColor, text, 0, 0, item->textStyle );
+		DC->drawText( item->textRect.x + item->textRect.w + 8, item->textRect.y, item->font, item->textscale, newColor, text, 0, 0, item->textStyle, item->textRect.scrAlign );
 	} else {
-		DC->drawText( item->textRect.x, item->textRect.y, item->font, item->textscale, newColor, text, 0, 0, item->textStyle );
+		DC->drawText( item->textRect.x, item->textRect.y, item->font, item->textscale, newColor, text, 0, 0, item->textStyle, item->textRect.scrAlign );
 	}
 }
 
@@ -3547,7 +3706,9 @@ static bind_t g_bindings[] =
 //	{"help",			K_F1,           -1, -1, -1},
 	{"+leanleft",        -1,             -1, -1, -1},
 	{"+leanright",       -1,             -1, -1, -1},
-	{"kill",         -1,             -1, -1, -1}
+	{"kill",			-1,             -1, -1, -1},	// Knightmare added
+	{"screenshot",       -1,             -1, -1, -1},	// Knightmare added
+	{"screenshotjpeg",   -1,             -1, -1, -1}
 };
 
 
@@ -3732,10 +3893,10 @@ void Item_Slider_Paint( itemDef_t *item ) {
 		x = item->window.rect.x;
 	}
 	DC->setColor( newColor );
-	DC->drawHandlePic( x, y, SLIDER_WIDTH, SLIDER_HEIGHT, DC->Assets.sliderBar );
+	DC->drawHandlePic( x, y, SLIDER_WIDTH, SLIDER_HEIGHT, DC->Assets.sliderBar, item->window.rect.scrAlign );
 
 	x = Item_Slider_ThumbPosition( item );
-	DC->drawHandlePic( x - ( SLIDER_THUMB_WIDTH / 2 ), y - 2, SLIDER_THUMB_WIDTH, SLIDER_THUMB_HEIGHT, DC->Assets.sliderThumb );
+	DC->drawHandlePic( x - ( SLIDER_THUMB_WIDTH / 2 ), y - 2, SLIDER_THUMB_WIDTH, SLIDER_THUMB_HEIGHT, DC->Assets.sliderThumb, item->window.rect.scrAlign );
 }
 
 void Item_Bind_Paint( itemDef_t *item ) {
@@ -3770,9 +3931,9 @@ void Item_Bind_Paint( itemDef_t *item ) {
 	if ( item->text ) {
 		Item_Text_Paint( item );
 		BindingFromName( item->cvar );
-		DC->drawText( item->textRect.x + item->textRect.w + 8, item->textRect.y, item->font, item->textscale, newColor, g_nameBind1, 0, maxChars, item->textStyle );
+		DC->drawText( item->textRect.x + item->textRect.w + 8, item->textRect.y, item->font, item->textscale, newColor, g_nameBind1, 0, maxChars, item->textStyle, item->textRect.scrAlign );
 	} else {
-		DC->drawText( item->textRect.x, item->textRect.y, item->font, item->textscale, newColor, ( value != 0 ) ? "FIXME" : "FIXME", 0, maxChars, item->textStyle );
+		DC->drawText( item->textRect.x, item->textRect.y, item->font, item->textscale, newColor, ( value != 0 ) ? "FIXME" : "FIXME", 0, maxChars, item->textStyle, item->textRect.scrAlign );
 	}
 }
 
@@ -3877,14 +4038,321 @@ qboolean Item_Bind_HandleKey( itemDef_t *item, int key, qboolean down ) {
 	return qtrue;
 }
 
+void AdjustFrom640( float *x, float *y, float *w, float *h, scralign_t align ) {
+	float	xscale, lb_xscale, yscale, minscale, vertscale;	// Knightmare added
+	float	tmp_x, tmp_y, tmp_w, tmp_h, tmp_left, tmp_right;	// Knightmare added
+	float	xleft, xright;
 
+	int scr_surroundlayout = DC->getCVarValue( "scr_surroundlayout" );
+	float scr_surroundleft = DC->getCVarValue( "scr_surroundleft" );
+	float scr_surroundright = DC->getCVarValue( "scr_surroundright" );
 
-void AdjustFrom640( float *x, float *y, float *w, float *h ) {
-	//*x = *x * DC->scale + DC->bias;
+	// for eyefinity/surround setups, keep everything on the center monitor
+	if (scr_surroundlayout != 0 && DC->screenAspect >= 3.6f)
+	{
+		if (scr_surroundleft > 0.0f && scr_surroundleft < 1.0f)
+			xleft = (float)DC->glconfig.vidWidth * scr_surroundleft;
+		else
+			xleft = (float)DC->glconfig.vidWidth / 3.0f;
+		if (scr_surroundright > 0.0f && scr_surroundright < 1.0f)
+			xright = (float)DC->glconfig.vidWidth * scr_surroundright;
+		else
+			xright = (float)DC->glconfig.vidWidth * (2.0f / 3.0f);
+		xscale = (xright - xleft) / SCREEN_WIDTH;
+	}
+	else
+	{
+		xleft = 0.0f;
+		xright = (float)DC->glconfig.vidWidth;
+		xscale = (float)DC->glconfig.vidWidth / SCREEN_WIDTH;
+	}
+
+	lb_xscale = (float)DC->glconfig.vidWidth / SCREEN_WIDTH;
+	yscale = (float)DC->glconfig.vidHeight / SCREEN_HEIGHT;
+	minscale = min(xscale, yscale);
+
+	// hack for 5:4 modes
+	if ( !(DC->xscale > DC->yscale) && align != ALIGN_LETTERBOX)
+		align = ALIGN_STRETCH;
+
+	// scale for screen sizes
+	// Knightmare- added anamorphic code
+	switch (align)
+	{
+	case ALIGN_CENTER:
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - (0.5 * SCREEN_WIDTH)) * minscale + (0.5 * DC->glconfig.vidWidth);
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - (0.5 * SCREEN_HEIGHT)) * minscale + (0.5 * DC->glconfig.vidHeight);
+		}
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		break;
+	case ALIGN_LETTERBOX:
+		// special case: video mode (eyefinity?) is wider than object
+		if ( w != NULL && h != NULL && ((float)DC->glconfig.vidWidth / (float)DC->glconfig.vidHeight > *w / *h) ) {
+			tmp_h = *h;
+			vertscale = DC->glconfig.vidHeight / tmp_h;
+			if (x != NULL && w != NULL) {
+				tmp_x = *x;
+				tmp_w = *w;
+				*x = tmp_x * lb_xscale - (0.5 * (tmp_w * vertscale - tmp_w * lb_xscale));
+			}
+			if (y)
+				*y = 0;
+			if (w) 
+				*w *= vertscale;
+			if (h)
+				*h *= vertscale;
+		}
+		else {
+			if (x)
+				*x *= xscale;
+			if (y != NULL && h != NULL) {
+				tmp_y = *y;
+				tmp_h = *h;
+				*y = tmp_y * yscale - (0.5 * (tmp_h * xscale - tmp_h * yscale));
+			}
+			if (w) 
+				*w *= xscale;
+			if (h)
+				*h *= xscale;
+		}
+		break;
+	case ALIGN_TOP:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - (0.5 * SCREEN_WIDTH)) * minscale + (0.5 * DC->glconfig.vidWidth);
+		}
+		if (y)
+			*y *= minscale;
+		break;
+	case ALIGN_BOTTOM:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - (0.5 * SCREEN_WIDTH)) * minscale + (0.5 * DC->glconfig.vidWidth);
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - SCREEN_HEIGHT) * minscale + DC->glconfig.vidHeight;
+		}
+		break;
+	case ALIGN_RIGHT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - SCREEN_WIDTH) * minscale + xright;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - (0.5 * SCREEN_HEIGHT)) * minscale + (0.5 * DC->glconfig.vidHeight);
+		}
+		break;
+	case ALIGN_LEFT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * minscale + xleft;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - (0.5 * SCREEN_HEIGHT)) * minscale + (0.5 * DC->glconfig.vidHeight);
+		}
+		break;
+	case ALIGN_TOPRIGHT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - SCREEN_WIDTH) * minscale + xright;
+		}
+		if (y)
+			*y *= minscale;
+		break;
+	case ALIGN_TOPLEFT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * minscale + xleft;
+		}
+		if (y)
+			*y *= minscale;
+		break;
+	case ALIGN_BOTTOMRIGHT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = (tmp_x - SCREEN_WIDTH) * minscale + xright;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - SCREEN_HEIGHT) * minscale + DC->glconfig.vidHeight;
+		}
+		break;
+	case ALIGN_BOTTOMLEFT:
+		if (w) 
+			*w *= minscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * minscale + xleft;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - SCREEN_HEIGHT) * minscale + DC->glconfig.vidHeight;
+		}
+		break;
+	case ALIGN_TOP_STRETCH:
+		if (w) 
+			*w *= xscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * xscale + xleft;
+		}
+		if (y)
+			*y *= minscale;
+		break;
+	case ALIGN_BOTTOM_STRETCH:
+		if (w) 
+			*w *= xscale;
+		if (h)
+			*h *= minscale;
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * xscale + xleft;
+		}
+		if (y) {
+			tmp_y = *y;
+			*y = (tmp_y - SCREEN_HEIGHT) * minscale + DC->glconfig.vidHeight;
+		}
+		break;
+	case ALIGN_STRETCH_ALL:
+		if (x)
+			*x *= lb_xscale;
+		if (y) 
+			*y *= yscale;
+		if (w) 
+			*w *= lb_xscale;
+		if (h)
+			*h *= yscale;
+		break;
+	case ALIGN_STRETCH_LEFT_CENTER:
+		if (x && w) {
+			tmp_x = *x;
+			tmp_w = *w;
+			tmp_left = tmp_x * xscale + xleft;
+			tmp_right = (tmp_x + tmp_w - (0.5*SCREEN_WIDTH)) * minscale + (0.5*(DC->glconfig.vidWidth));
+			*x = tmp_left;
+			*w = tmp_right - tmp_left;
+		}
+		if (y) 
+			*y *= minscale;
+		if (h)
+			*h *= minscale;
+		break;
+	case ALIGN_STRETCH_RIGHT_CENTER:
+		if (x && w) {
+			tmp_x = *x;
+			tmp_w = *w;
+			tmp_left = (tmp_x - (0.5*SCREEN_WIDTH)) * minscale + (0.5*(DC->glconfig.vidWidth));
+			tmp_right = (tmp_x + tmp_w - SCREEN_WIDTH) * xscale + xright;
+			*x = tmp_left;
+			*w = tmp_right - tmp_left;
+		}
+		if (y) 
+			*y *= minscale;
+		if (h)
+			*h *= minscale;
+		break;
+	case ALIGN_STRETCH:
+	default:
+		if (x) {
+			tmp_x = *x;
+			*x = tmp_x * xscale + xleft;
+		}
+		if (y) 
+			*y *= yscale;
+		if (w) 
+			*w *= xscale;
+		if (h)
+			*h *= yscale;
+		break;
+	}
+
+/*	//*x = *x * DC->scale + DC->bias;
 	*x *= DC->xscale;
 	*y *= DC->yscale;
 	*w *= DC->xscale;
 	*h *= DC->yscale;
+*/
+}
+
+// Knightmare- added for reverse-scaling objects for mouseover
+float GetScaleForAlign ( qboolean isY, scralign_t align ) {
+	// hack for 4:3 modes
+	if ( !(DC->xscale > DC->yscale) && align != ALIGN_LETTERBOX)
+		align = ALIGN_STRETCH;
+
+	switch (align)
+	{
+	case ALIGN_LETTERBOX:
+		return DC->xscale;
+	case ALIGN_CENTER:
+	case ALIGN_TOP:
+	case ALIGN_BOTTOM:
+	case ALIGN_RIGHT:
+	case ALIGN_LEFT:
+	case ALIGN_TOPRIGHT:
+	case ALIGN_TOPLEFT:
+	case ALIGN_BOTTOMRIGHT:
+	case ALIGN_BOTTOMLEFT:
+		return DC->minscale;
+	case ALIGN_TOP_STRETCH:
+	case ALIGN_BOTTOM_STRETCH:
+		if (isY)
+			return DC->minscale;
+		else
+			return DC->xscale;
+	case ALIGN_STRETCH:
+	case ALIGN_STRETCH_LEFT_CENTER:
+	case ALIGN_STRETCH_RIGHT_CENTER:
+	case ALIGN_STRETCH_ALL:
+	default:
+			if (isY)
+			return DC->yscale;
+		else
+			return DC->xscale;
+	}
 }
 
 void Item_Model_Paint( itemDef_t *item ) {
@@ -3916,7 +4384,8 @@ void Item_Model_Paint( itemDef_t *item ) {
 	w = item->window.rect.w - 2;
 	h = item->window.rect.h - 2;
 
-	AdjustFrom640( &x, &y, &w, &h );
+	// Knightmare- use anamorphic function
+	AdjustFrom640( &x, &y, &w, &h, item->window.rect.scrAlign );
 
 	refdef.x = x;
 	refdef.y = y;
@@ -4013,7 +4482,7 @@ void Item_Image_Paint( itemDef_t *item ) {
 	if ( item == NULL ) {
 		return;
 	}
-	DC->drawHandlePic( item->window.rect.x + 1, item->window.rect.y + 1, item->window.rect.w - 2, item->window.rect.h - 2, item->asset );
+	DC->drawHandlePic( item->window.rect.x + 1, item->window.rect.y + 1, item->window.rect.w - 2, item->window.rect.h - 2, item->asset, item->window.rect.scrAlign );
 }
 
 void Item_ListBox_Paint( itemDef_t *item ) {
@@ -4033,18 +4502,18 @@ void Item_ListBox_Paint( itemDef_t *item ) {
 		// bar
 		x = item->window.rect.x + 1;
 		y = item->window.rect.y + item->window.rect.h - SCROLLBAR_SIZE - 1;
-		DC->drawHandlePic( x, y, SCROLLBAR_SIZE, SCROLLBAR_SIZE, DC->Assets.scrollBarArrowLeft );
+		DC->drawHandlePic( x, y, SCROLLBAR_SIZE, SCROLLBAR_SIZE, DC->Assets.scrollBarArrowLeft, item->window.rect.scrAlign );
 		x += SCROLLBAR_SIZE - 1;
 		size = item->window.rect.w - ( SCROLLBAR_SIZE * 2 );
-		DC->drawHandlePic( x, y, size + 1, SCROLLBAR_SIZE, DC->Assets.scrollBar );
+		DC->drawHandlePic( x, y, size + 1, SCROLLBAR_SIZE, DC->Assets.scrollBar, item->window.rect.scrAlign );
 		x += size - 1;
-		DC->drawHandlePic( x, y, SCROLLBAR_SIZE, SCROLLBAR_SIZE, DC->Assets.scrollBarArrowRight );
+		DC->drawHandlePic( x, y, SCROLLBAR_SIZE, SCROLLBAR_SIZE, DC->Assets.scrollBarArrowRight, item->window.rect.scrAlign );
 		// thumb
 		thumb = Item_ListBox_ThumbDrawPosition( item ); //Item_ListBox_ThumbPosition(item);
 		if ( thumb > x - SCROLLBAR_SIZE - 1 ) {
 			thumb = x - SCROLLBAR_SIZE - 1;
 		}
-		DC->drawHandlePic( thumb, y, SCROLLBAR_SIZE, SCROLLBAR_SIZE, DC->Assets.scrollBarThumb );
+		DC->drawHandlePic( thumb, y, SCROLLBAR_SIZE, SCROLLBAR_SIZE, DC->Assets.scrollBarThumb, item->window.rect.scrAlign );
 		//
 		listPtr->endPos = listPtr->startPos;
 		size = item->window.rect.w - 2;
@@ -4059,11 +4528,11 @@ void Item_ListBox_Paint( itemDef_t *item ) {
 				// which may overdraw the box if it is too small for the element
 				image = DC->feederItemImage( item->special, i );
 				if ( image ) {
-					DC->drawHandlePic( x + 1, y + 1, listPtr->elementWidth - 2, listPtr->elementHeight - 2, image );
+					DC->drawHandlePic( x + 1, y + 1, listPtr->elementWidth - 2, listPtr->elementHeight - 2, image, item->window.rect.scrAlign );
 				}
 
 				if ( i == item->cursorPos ) {
-					DC->drawRect( x, y, listPtr->elementWidth - 1, listPtr->elementHeight - 1, item->window.borderSize, item->window.borderColor );
+					DC->drawRect( x, y, listPtr->elementWidth - 1, listPtr->elementHeight - 1, item->window.borderSize, item->window.borderColor, item->window.rect.scrAlign );
 				}
 
 				size -= listPtr->elementWidth;
@@ -4082,20 +4551,20 @@ void Item_ListBox_Paint( itemDef_t *item ) {
 		// draw scrollbar to right side of the window
 		x = item->window.rect.x + item->window.rect.w - SCROLLBAR_SIZE - 1;
 		y = item->window.rect.y + 1;
-		DC->drawHandlePic( x, y, SCROLLBAR_SIZE, SCROLLBAR_SIZE, DC->Assets.scrollBarArrowUp );
+		DC->drawHandlePic( x, y, SCROLLBAR_SIZE, SCROLLBAR_SIZE, DC->Assets.scrollBarArrowUp, item->window.rect.scrAlign );
 		y += SCROLLBAR_SIZE - 1;
 
 		listPtr->endPos = listPtr->startPos;
 		size = item->window.rect.h - ( SCROLLBAR_SIZE * 2 );
-		DC->drawHandlePic( x, y, SCROLLBAR_SIZE, size + 1, DC->Assets.scrollBar );
+		DC->drawHandlePic( x, y, SCROLLBAR_SIZE, size + 1, DC->Assets.scrollBar, item->window.rect.scrAlign );
 		y += size - 1;
-		DC->drawHandlePic( x, y, SCROLLBAR_SIZE, SCROLLBAR_SIZE, DC->Assets.scrollBarArrowDown );
+		DC->drawHandlePic( x, y, SCROLLBAR_SIZE, SCROLLBAR_SIZE, DC->Assets.scrollBarArrowDown, item->window.rect.scrAlign );
 		// thumb
 		thumb = Item_ListBox_ThumbDrawPosition( item ); //Item_ListBox_ThumbPosition(item);
 		if ( thumb > y - SCROLLBAR_SIZE - 1 ) {
 			thumb = y - SCROLLBAR_SIZE - 1;
 		}
-		DC->drawHandlePic( x, thumb, SCROLLBAR_SIZE, SCROLLBAR_SIZE, DC->Assets.scrollBarThumb );
+		DC->drawHandlePic( x, thumb, SCROLLBAR_SIZE, SCROLLBAR_SIZE, DC->Assets.scrollBarThumb, item->window.rect.scrAlign );
 
 		// adjust size for item painting
 		size = item->window.rect.h - 2;
@@ -4108,11 +4577,11 @@ void Item_ListBox_Paint( itemDef_t *item ) {
 				// which may overdraw the box if it is too small for the element
 				image = DC->feederItemImage( item->special, i );
 				if ( image ) {
-					DC->drawHandlePic( x + 1, y + 1, listPtr->elementWidth - 2, listPtr->elementHeight - 2, image );
+					DC->drawHandlePic( x + 1, y + 1, listPtr->elementWidth - 2, listPtr->elementHeight - 2, image, item->window.rect.scrAlign );
 				}
 
 				if ( i == item->cursorPos ) {
-					DC->drawRect( x, y, listPtr->elementWidth - 1, listPtr->elementHeight - 1, item->window.borderSize, item->window.borderColor );
+					DC->drawRect( x, y, listPtr->elementWidth - 1, listPtr->elementHeight - 1, item->window.borderSize, item->window.borderColor, item->window.rect.scrAlign );
 				}
 
 				listPtr->endPos++;
@@ -4137,9 +4606,9 @@ void Item_ListBox_Paint( itemDef_t *item ) {
 					for ( j = 0; j < listPtr->numColumns; j++ ) {
 						text = DC->feederItemText( item->special, i, j, &optionalImage );
 						if ( optionalImage >= 0 ) {
-							DC->drawHandlePic( x + 4 + listPtr->columnInfo[j].pos, y - 1 + listPtr->elementHeight / 2, listPtr->columnInfo[j].width, listPtr->columnInfo[j].width, optionalImage );
+							DC->drawHandlePic( x + 4 + listPtr->columnInfo[j].pos, y - 1 + listPtr->elementHeight / 2, listPtr->columnInfo[j].width, listPtr->columnInfo[j].width, optionalImage, item->window.rect.scrAlign );
 						} else if ( text ) {
-							DC->drawText( x + 4 + listPtr->columnInfo[j].pos, y + listPtr->elementHeight, item->font, item->textscale, item->window.foreColor, text, 0, listPtr->columnInfo[j].maxChars, item->textStyle );
+							DC->drawText( x + 4 + listPtr->columnInfo[j].pos, y + listPtr->elementHeight, item->font, item->textscale, item->window.foreColor, text, 0, listPtr->columnInfo[j].maxChars, item->textStyle, item->window.rect.scrAlign );
 						}
 					}
 				} else {
@@ -4147,12 +4616,12 @@ void Item_ListBox_Paint( itemDef_t *item ) {
 					if ( optionalImage >= 0 ) {
 						//DC->drawHandlePic(x + 4 + listPtr->elementHeight, y, listPtr->columnInfo[j].width, listPtr->columnInfo[j].width, optionalImage);
 					} else if ( text ) {
-						DC->drawText( x + 4, y + listPtr->elementHeight, item->font, item->textscale, item->window.foreColor, text, 0, 0, item->textStyle );
+						DC->drawText( x + 4, y + listPtr->elementHeight, item->font, item->textscale, item->window.foreColor, text, 0, 0, item->textStyle, item->window.rect.scrAlign );
 					}
 				}
 
 				if ( i == item->cursorPos ) {
-					DC->fillRect( x + 2, y + 2, item->window.rect.w - SCROLLBAR_SIZE - 4, listPtr->elementHeight, item->window.outlineColor );
+					DC->fillRect( x + 2, y + 2, item->window.rect.w - SCROLLBAR_SIZE - 4, listPtr->elementHeight, item->window.outlineColor, item->window.rect.scrAlign );
 				}
 
 				size -= listPtr->elementHeight;
@@ -4223,12 +4692,12 @@ void Item_OwnerDraw_Paint( itemDef_t *item ) {
 			Item_Text_Paint( item );
 			if ( item->text[0] ) {
 				// +8 is an offset kludge to properly align owner draw items that have text combined with them
-				DC->ownerDrawItem( item->textRect.x + item->textRect.w + 8, item->window.rect.y, item->window.rect.w, item->window.rect.h, 0, item->textaligny, item->window.ownerDraw, item->window.ownerDrawFlags, item->alignment, item->special, item->font, item->textscale, color, item->window.background, item->textStyle );
+				DC->ownerDrawItem( item->textRect.x + item->textRect.w + 8, item->window.rect.y, item->window.rect.w, item->window.rect.h, 0, item->textaligny, item->window.ownerDraw, item->window.ownerDrawFlags, item->alignment, item->special, item->font, item->textscale, color, item->window.background, item->textStyle, item->textRect.scrAlign );
 			} else {
-				DC->ownerDrawItem( item->textRect.x + item->textRect.w, item->window.rect.y, item->window.rect.w, item->window.rect.h, 0, item->textaligny, item->window.ownerDraw, item->window.ownerDrawFlags, item->alignment, item->special, item->font, item->textscale, color, item->window.background, item->textStyle );
+				DC->ownerDrawItem( item->textRect.x + item->textRect.w, item->window.rect.y, item->window.rect.w, item->window.rect.h, 0, item->textaligny, item->window.ownerDraw, item->window.ownerDrawFlags, item->alignment, item->special, item->font, item->textscale, color, item->window.background, item->textStyle, item->textRect.scrAlign );
 			}
 		} else {
-			DC->ownerDrawItem( item->window.rect.x, item->window.rect.y, item->window.rect.w, item->window.rect.h, item->textalignx, item->textaligny, item->window.ownerDraw, item->window.ownerDrawFlags, item->alignment, item->special, item->font, item->textscale, color, item->window.background, item->textStyle );
+			DC->ownerDrawItem( item->window.rect.x, item->window.rect.y, item->window.rect.w, item->window.rect.h, item->textalignx, item->textaligny, item->window.ownerDraw, item->window.ownerDrawFlags, item->alignment, item->special, item->font, item->textscale, color, item->window.background, item->textStyle, item->window.rect.scrAlign );
 		}
 	}
 }
@@ -4377,7 +4846,7 @@ void Item_Paint( itemDef_t *item ) {
 		rectDef_t *r = Item_CorrectedTextRect( item );
 		color[1] = color[3] = 1;
 		color[0] = color[2] = 0;
-		DC->drawRect( r->x, r->y, r->w, r->h, 1, color );
+		DC->drawRect( r->x, r->y, r->w, r->h, 1, color, r->scrAlign );
 	}
 
 	//DC->drawRect(item->window.rect.x, item->window.rect.y, item->window.rect.w, item->window.rect.h, 1, red);
@@ -4611,7 +5080,7 @@ void Menu_HandleMouseMove( menuDef_t *menu, float x, float y ) {
 }
 
 void Menu_Paint( menuDef_t *menu, qboolean forcePaint ) {
-	int i;
+	int		i;
 
 	if ( menu == NULL ) {
 		return;
@@ -4629,11 +5098,20 @@ void Menu_Paint( menuDef_t *menu, qboolean forcePaint ) {
 		menu->window.flags |= WINDOW_FORCED;
 	}
 
+	// Knightmare: added pillarbox in widescreen for loadscreens
+	if ( (DC->xscale > DC->yscale) && (!Q_strcasecmp(menu->window.name, "connect") || !Q_strcasecmp(menu->window.name, "briefing") || !Q_strcasecmp(menu->window.name, "pregame")))
+	{
+		vec4_t	color = {0, 0, 0, 1};
+		DC->setColor( color );
+		DC->drawHandlePic( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, menu->window.background, ALIGN_STRETCH_ALL );
+		DC->setColor( NULL );
+	}
+
 	// draw the background if necessary
 	if ( menu->fullScreen ) {
 		// implies a background shader
 		// FIXME: make sure we have a default shader if fullscreen is set with no background
-		DC->drawHandlePic( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, menu->window.background );
+		DC->drawHandlePic( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, menu->window.background, ALIGN_CENTER );
 	} else if ( menu->window.background ) {
 		// this allows a background shader without being full screen
 		//UI_DrawHandlePic(menu->window.rect.x, menu->window.rect.y, menu->window.rect.w, menu->window.rect.h, menu->backgroundShader);
@@ -4650,7 +5128,7 @@ void Menu_Paint( menuDef_t *menu, qboolean forcePaint ) {
 		vec4_t color;
 		color[0] = color[2] = color[3] = 1;
 		color[1] = 0;
-		DC->drawRect( menu->window.rect.x, menu->window.rect.y, menu->window.rect.w, menu->window.rect.h, 1, color );
+		DC->drawRect( menu->window.rect.x, menu->window.rect.y, menu->window.rect.w, menu->window.rect.h, 1, color, menu->window.rect.scrAlign );
 	}
 }
 
@@ -4940,6 +5418,17 @@ qboolean ItemParse_rect( itemDef_t *item, int handle ) {
 	if ( !PC_Rect_Parse( handle, &item->window.rectClient ) ) {
 		return qfalse;
 	}
+	return qtrue;
+}
+
+// Knightmare added
+// align <alignment>
+qboolean ItemParse_scrAlign( itemDef_t *item, int handle ) {
+	if ( !PC_ScrAlign_Parse( handle, &item->window.rectClient ) ) {
+		return qfalse;
+	}
+	item->window.rect.scrAlign = item->window.rectClient.scrAlign;
+	item->textRect.scrAlign = item->window.rectClient.scrAlign;
 	return qtrue;
 }
 
@@ -5574,6 +6063,7 @@ keywordHash_t itemParseKeywords[] = {
 	{"model_angle", ItemParse_model_angle, NULL},
 	{"model_animplay", ItemParse_model_animplay, NULL},
 	{"rect", ItemParse_rect, NULL},
+	{"scralign", ItemParse_scrAlign, NULL},	// Knightmare added
 	{"style", ItemParse_style, NULL},
 	{"decoration", ItemParse_decoration, NULL},
 	{"notselectable", ItemParse_notselectable, NULL},
@@ -5656,13 +6146,18 @@ qboolean Item_Parse( int handle, itemDef_t *item ) {
 	pc_token_t token;
 	keywordHash_t *key;
 
-
 	if ( !trap_PC_ReadToken( handle, &token ) ) {
 		return qfalse;
 	}
 	if ( *token.string != '{' ) {
 		return qfalse;
 	}
+
+	// Knightmare: set default alignment here
+	item->window.rectClient.scrAlign = ALIGN_CENTER;
+	item->window.rect.scrAlign = ALIGN_CENTER;
+	item->textRect.scrAlign = ALIGN_CENTER;
+
 	while ( 1 ) {
 		if ( !trap_PC_ReadToken( handle, &token ) ) {
 			PC_SourceError( handle, "end of file inside menu item\n" );
@@ -5745,6 +6240,16 @@ qboolean MenuParse_fullscreen( itemDef_t *item, int handle ) {
 qboolean MenuParse_rect( itemDef_t *item, int handle ) {
 	menuDef_t *menu = (menuDef_t*)item;
 	if ( !PC_Rect_Parse( handle, &menu->window.rect ) ) {
+		return qfalse;
+	}
+	return qtrue;
+}
+
+// Knightmare added
+// align <alignment>
+qboolean MenuParse_scrAlign( itemDef_t *item, int handle ) {
+	menuDef_t *menu = (menuDef_t*)item;
+	if ( !PC_ScrAlign_Parse( handle, &menu->window.rect ) ) {
 		return qfalse;
 	}
 	return qtrue;
@@ -6048,6 +6553,7 @@ keywordHash_t menuParseKeywords[] = {
 	{"name", MenuParse_name, NULL},
 	{"fullscreen", MenuParse_fullscreen, NULL},
 	{"rect", MenuParse_rect, NULL},
+	{"scralign", MenuParse_scrAlign, NULL},	// Knightmare added
 	{"style", MenuParse_style, NULL},
 	{"visible", MenuParse_visible, NULL},
 	{"onOpen", MenuParse_onOpen, NULL},
@@ -6110,6 +6616,9 @@ qboolean Menu_Parse( int handle, menuDef_t *menu ) {
 		return qfalse;
 	}
 
+	// Knightmare- set default alignment
+	menu->window.rect.scrAlign = ALIGN_CENTER;
+
 	while ( 1 ) {
 
 		memset( &token, 0, sizeof( pc_token_t ) );
@@ -6167,7 +6676,7 @@ void Menu_PaintAll() {
 
 	if ( debugMode ) {
 		vec4_t v = {1, 1, 1, 1};
-		DC->drawText( 5, 25, 0, .5, v, va( "fps: %f", DC->FPS ), 0, 0, 0 );
+		DC->drawText( 5, 25, 0, .5, v, va( "fps: %f", DC->FPS ), 0, 0, 0, ALIGN_TOPLEFT );
 	}
 }
 
@@ -6186,7 +6695,7 @@ static float captureY;
 */
 
 void *Display_CaptureItem( int x, int y ) {
-	int i;
+	int	i;
 
 	for ( i = 0; i < menuCount; i++ ) {
 		// turn off focus each item
@@ -6231,6 +6740,7 @@ int Display_CursorType( int x, int y ) {
 		r2.x = Menus[i].window.rect.x - 3;
 		r2.y = Menus[i].window.rect.y - 3;
 		r2.w = r2.h = 7;
+		r2.scrAlign = Menus[i].window.rect.scrAlign;	// Knightmare added
 		if ( Rect_ContainsPoint( &r2, x, y ) ) {
 			return CURSOR_SIZER;
 		}

@@ -36,6 +36,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "cg_local.h"
 #include "../ui/ui_shared.h"
+#include "../game/km_cvar.h"	// Knightmare added
 
 displayContextDef_t cgDC;
 
@@ -122,6 +123,7 @@ vmCvar_t cg_drawIcons;
 vmCvar_t cg_youGotMail;         //----(SA)	added
 vmCvar_t cg_drawAmmoWarning;
 vmCvar_t cg_drawCrosshair;
+vmCvar_t cg_drawCrosshairSniper;	// Knightmare added
 vmCvar_t cg_drawCrosshairNames;
 vmCvar_t cg_drawCrosshairPickups;
 vmCvar_t cg_hudAlpha;
@@ -170,6 +172,7 @@ vmCvar_t cg_autoswitch;
 vmCvar_t cg_ignore;
 vmCvar_t cg_simpleItems;
 vmCvar_t cg_fov;
+vmCvar_t cg_widescreen_fov;		// Knightmare added
 vmCvar_t cg_zoomFov;
 vmCvar_t cg_zoomStepBinoc;
 vmCvar_t cg_zoomStepSniper;
@@ -276,6 +279,27 @@ vmCvar_t mp_mapTitle;
 vmCvar_t mp_itemDesc;
 // -NERVE - SMF
 
+// Knightmare- game balancing cvars
+vmCvar_t		sk_rot_health;
+//vmCvar_t		sk_rot_armor;
+//vmCvar_t		sk_brandy_ignore_max_health;
+//vmCvar_t		sk_dropped_weapon_min_ammo;
+
+vmCvar_t		sk_max_mega_health;
+vmCvar_t		sk_max_armor;
+vmCvar_t		sk_max_9mm;
+vmCvar_t		sk_max_45cal;
+vmCvar_t		sk_max_792mm;
+vmCvar_t		sk_max_30cal;
+vmCvar_t		sk_max_127mm;
+vmCvar_t		sk_max_pf_rockets;
+vmCvar_t		sk_max_fuel;
+vmCvar_t		sk_max_cells;
+vmCvar_t		sk_max_grenades;
+vmCvar_t		sk_max_pineapples;
+vmCvar_t		sk_max_dynamite;
+// end Knightmare
+
 typedef struct {
 	vmCvar_t    *vmCvar;
 	char        *cvarName;
@@ -302,6 +326,7 @@ cvarTable_t cvarTable[] = {
 	{ &cg_zoomStepSnooper, "cg_zoomStepSnooper", "5", CVAR_ARCHIVE },
 	{ &cg_zoomStepFG, "cg_zoomStepFG", "10", CVAR_ARCHIVE },          //----(SA)	added
 	{ &cg_fov, "cg_fov", "90", CVAR_ARCHIVE | CVAR_CHEAT }, // JPW NERVE added cheat protect	NOTE: there is already a dmflag (DF_FIXED_FOV) to allow server control of this cheat
+	{ &cg_widescreen_fov, "cg_widescreen_fov", "1", CVAR_ARCHIVE },	// Knightmare added
 	{ &cg_viewsize, "cg_viewsize", "100", CVAR_ARCHIVE },
 	{ &cg_letterbox, "cg_letterbox", "0", CVAR_TEMP },    //----(SA)	added
 	{ &cg_stereoSeparation, "cg_stereoSeparation", "0.4", CVAR_ARCHIVE  },
@@ -319,6 +344,7 @@ cvarTable_t cvarTable[] = {
 	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "1", CVAR_ARCHIVE  },
 	{ &cg_drawAttacker, "cg_drawAttacker", "1", CVAR_ARCHIVE  },
 	{ &cg_drawCrosshair, "cg_drawCrosshair", "4", CVAR_ARCHIVE },
+	{ &cg_drawCrosshairSniper, "cg_drawCrosshairSniper", "1", CVAR_ARCHIVE },	// Knightmare added
 	{ &cg_drawCrosshairNames, "cg_drawCrosshairNames", "1", CVAR_ARCHIVE },
 	{ &cg_drawCrosshairPickups, "cg_drawCrosshairPickups", "1", CVAR_ARCHIVE },
 	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE },
@@ -432,6 +458,27 @@ cvarTable_t cvarTable[] = {
 	{ &cg_norender, "cg_norender", "0", 0 },  // only used during single player, to suppress rendering until the server is ready
 
 	{ &cg_gameSkill, "g_gameskill", "2", 0 }, // communicated by systeminfo	// (SA) new default '2' (was '1')
+
+	// Knightmare- game balancing cvars
+	{ &sk_rot_health, "sk_rot_health", "0", 0 },
+//	{ &sk_rot_armor, "sk_rot_armor", "0", 0  },
+//	{ &sk_brandy_ignore_max_health, "sk_brandy_ignore_max_health", "0", 0 },
+//	{ &sk_dropped_weapon_min_ammo, "sk_dropped_weapon_min_ammo", "0.25", 0 },
+
+	{ &sk_max_mega_health, "sk_max_mega_health", "200", 0 },
+	{ &sk_max_armor, "sk_max_armor", "100", 0 },
+	{ &sk_max_9mm, "sk_max_9mm", "300", 0 },
+	{ &sk_max_45cal, "sk_max_45cal", "300", 0 },
+	{ &sk_max_792mm, "sk_max_792mm", "200", 0 },
+	{ &sk_max_30cal, "sk_max_30cal", "20", 0 },
+	{ &sk_max_127mm, "sk_max_127mm", "1000", 0 },
+	{ &sk_max_pf_rockets, "sk_max_pf_rockets", "5", 0 },
+	{ &sk_max_fuel, "sk_max_fuel", "150", 0 },
+	{ &sk_max_cells, "sk_max_cells", "300", 0 },
+	{ &sk_max_grenades, "sk_max_grenades", "15", 0 },
+	{ &sk_max_pineapples, "sk_max_pineapples", "15", 0 },
+	{ &sk_max_dynamite, "sk_max_dynamite", "10", 0 },
+	// end Knightmare
 
 	{ &cg_reloading, "g_reloading", "0", 0 }, //----(SA)	added
 
@@ -565,7 +612,8 @@ void QDECL CG_Printf( const char *msg, ... ) {
 	char text[1024];
 
 	va_start( argptr, msg );
-	vsprintf( text, msg, argptr );
+//	vsprintf( text, msg, argptr );
+	Q_vsnprintf( text, sizeof(text), msg, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	trap_Print( text );
@@ -576,7 +624,8 @@ void QDECL CG_Error( const char *msg, ... ) {
 	char text[1024];
 
 	va_start( argptr, msg );
-	vsprintf( text, msg, argptr );
+//	vsprintf( text, msg, argptr );
+	Q_vsnprintf( text, sizeof(text), msg, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	trap_Error( text );
@@ -591,7 +640,8 @@ void QDECL Com_Error( int level, const char *error, ... ) {
 	char text[1024];
 
 	va_start( argptr, error );
-	vsprintf( text, error, argptr );
+//	vsprintf( text, error, argptr );
+	Q_vsnprintf( text, sizeof(text), error, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	CG_Error( "%s", text );
@@ -602,7 +652,8 @@ void QDECL Com_Printf( const char *msg, ... ) {
 	char text[1024];
 
 	va_start( argptr, msg );
-	vsprintf( text, msg, argptr );
+//	vsprintf( text, msg, argptr );
+	Q_vsnprintf( text, sizeof(text), msg, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	CG_Printf( "%s", text );
@@ -2105,8 +2156,8 @@ static float CG_Cvar_Get( const char *cvar ) {
 	return atof( buff );
 }
 
-void CG_Text_PaintWithCursor( float x, float y, int font, float scale, vec4_t color, const char *text, int cursorPos, char cursor, int limit, int style ) {
-	CG_Text_Paint( x, y, font, scale, color, text, 0, limit, style );
+void CG_Text_PaintWithCursor( float x, float y, int font, float scale, vec4_t color, const char *text, int cursorPos, char cursor, int limit, int style, scralign_t align ) {
+	CG_Text_Paint( x, y, font, scale, color, text, 0, limit, style, align );
 }
 
 static int CG_OwnerDrawWidth( int ownerDraw, int font, float scale ) {
@@ -2320,12 +2371,17 @@ void CG_Init( int serverMessageNum, int serverCommandSequence ) {
 
 	CG_InitConsoleCommands();
 
+	// Knightmare- init max ammo here
+	BG_InitAmmoTable();
+
 //	cg.weaponSelect = WP_MP40;
 
 	// get the rendering configuration from the client system
 	trap_GetGlconfig( &cgs.glconfig );
 	cgs.screenXScale = cgs.glconfig.vidWidth / 640.0;
 	cgs.screenYScale = cgs.glconfig.vidHeight / 480.0;
+	cgs.screenMinScale = min(cgs.screenXScale, cgs.screenYScale);	// Knightmare added
+	cgs.screenAspect = (float)cgs.glconfig.vidWidth / (float)cgs.glconfig.vidHeight;	// Knightmare added
 
 	// get the gamestate from the client system
 	trap_GetGameState( &cgs.gameState );

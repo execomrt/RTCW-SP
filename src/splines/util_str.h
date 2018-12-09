@@ -39,6 +39,16 @@ If you have questions concerning this license or the applicable additional terms
 #pragma warning(disable : 4710) // function 'blah' not inlined
 #endif
 
+// TTimo
+// vsnprintf is ISO/IEC 9899:1999
+// abstracting this to make it portable
+#ifdef WIN32
+#define Q_vsnprintf _vsnprintf
+#else
+// TODO: Mac define?
+#define Q_vsnprintf vsnprintf
+#endif
+
 void TestStringClass();
 
 class strdata

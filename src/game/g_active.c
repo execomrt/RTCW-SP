@@ -28,6 +28,7 @@ If you have questions concerning this license or the applicable additional terms
 
 
 #include "g_local.h"
+#include "km_cvar.h"	// Knightmare added
 
 #include "ai_cast_fight.h"   // need these for avoidance
 
@@ -215,10 +216,11 @@ void P_WorldEffects( gentity_t *ent ) {
 		if ( ent->health > 0 ) {
 			attacker = g_entities + ent->flameBurnEnt;
 			if ( g_gametype.integer == GT_SINGLE_PLAYER ) { // JPW NERVE
+			//	if ( !(attacker->r.svFlags & SVF_CASTAI) ) {
 				if ( ent->r.svFlags & SVF_CASTAI ) {
-					G_Damage( ent, attacker, attacker, NULL, NULL, 2, DAMAGE_NO_KNOCKBACK, MOD_FLAMETHROWER );
+					G_Damage( ent, attacker, attacker, NULL, NULL, sk_plr_dmg_flamethrower.integer, DAMAGE_NO_KNOCKBACK, MOD_FLAMETHROWER );	// Knightmare- was 2
 				} else if ( ( ent->s.onFireEnd - level.time ) > FIRE_FLASH_TIME / 2 && rand() % 5000 < ( ent->s.onFireEnd - level.time ) ) { // as it fades out, also fade out damage rate
-					G_Damage( ent, attacker, attacker, NULL, NULL, 1, DAMAGE_NO_KNOCKBACK, MOD_FLAMETHROWER );
+					G_Damage( ent, attacker, attacker, NULL, NULL, sk_ai_dmg_flamethrower.integer, DAMAGE_NO_KNOCKBACK, MOD_FLAMETHROWER );	// Knightmare- was 1
 				}
 			} // JPW NERVE
 			else { // JPW NERVE multiplayer flamethrower
@@ -499,7 +501,7 @@ void ClientTimerActions( gentity_t *ent, int msec ) {
 				}
 			} else {
 				// count down health when over max
-				if ( ent->health > client->ps.stats[STAT_MAX_HEALTH] ) {
+				if ( sk_rot_health.value && ent->health > client->ps.stats[STAT_MAX_HEALTH] ) {	// Knightmare- added option
 					ent->health--;
 				}
 			}
@@ -520,14 +522,14 @@ void ClientTimerActions( gentity_t *ent, int msec ) {
 				}
 			} else {
 				// count down health when over max
-				if ( ent->health > client->ps.stats[STAT_MAX_HEALTH] ) {
+				if ( sk_rot_health.value && ent->health > client->ps.stats[STAT_MAX_HEALTH] ) {	// Knightmare- added option
 					ent->health--;
 				}
 			}
 		}
 // jpw
 		// count down armor when over max
-		if ( client->ps.stats[STAT_ARMOR] > client->ps.stats[STAT_MAX_HEALTH] ) {
+		if ( sk_rot_armor.value && client->ps.stats[STAT_ARMOR] > client->ps.stats[STAT_MAX_HEALTH] ) {	// Knightmare- added option
 			client->ps.stats[STAT_ARMOR]--;
 		}
 	}

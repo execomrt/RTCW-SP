@@ -36,6 +36,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "q_shared.h"
 #include "bg_public.h"
+#include "km_cvar.h"	// Knightmare added
 
 
 #ifdef CGAMEDLL
@@ -47,14 +48,21 @@ extern vmCvar_t g_gametype;
 
 
 // NOTE: weapons that share ammo (ex. colt/thompson) need to share max ammo, but not necessarily uses or max clip
-#define MAX_AMMO_45     300
-#define MAX_AMMO_9MM    300
-#define MAX_AMMO_VENOM  1000
-#define MAX_AMMO_MAUSER 200
-#define MAX_AMMO_GARAND 10
-#define MAX_AMMO_FG42   MAX_AMMO_MAUSER
-#define MAX_AMMO_BAR    200
+#define MAX_AMMO_45			300
+#define MAX_AMMO_9MM		300
+#define MAX_AMMO_VENOM		1000
+#define MAX_AMMO_MAUSER		200
+#define MAX_AMMO_GARAND		10
+#define MAX_AMMO_FG42		MAX_AMMO_MAUSER
+#define MAX_AMMO_BAR		200
 
+// Knightmare- added these defines
+#define	MAX_GRENADES	15
+#define	MAX_PINEAPPLES	15
+#define	MAX_DYNAMITE	10
+#define	MAX_PF_ROCKETS	5
+#define	MAX_FUEL		150
+#define	MAX_CELLS		300
 
 // these defines are matched with the character torso animations
 #define DELAY_LOW       100 // machineguns, tesla, spear, flame
@@ -85,57 +93,103 @@ extern vmCvar_t g_gametype;
 //
 
 ammotable_t ammoTable[] = {
-	//	MAX				USES	MAX		RELOAD	FIRE			NEXT	HEAT,	COOL,	MOD,	...
-	//	AMMO			AMT.	CLIP	TIME	DELAY			SHOT
-	{   0,              0,      0,      0,      50,             0,      0,      0,      0                       },  //	WP_NONE					// 0
+	//	MAX				  USES	  MAX		      RELOAD  FIRE			  NEXT	  HEAT,	  COOL,	  MOD,	...
+	//	AMMO			  AMT.	  CLIP	          TIME	  DELAY			  SHOT
+	{   0,                0,      0,              0,      50,             0,      0,      0,      0                       },  //	WP_NONE					// 0
 
-	{   999,            0,      999,    0,      50,             200,    0,      0,      MOD_KNIFE               },  //	WP_KNIFE				// 1
+	{   999,              0,      999,            0,      50,             200,    0,      0,      MOD_KNIFE               },  //	WP_KNIFE				// 1
 
-	{   MAX_AMMO_9MM,   1,      8,      1500,   DELAY_PISTOL,   400,    0,      0,      MOD_LUGER               },  //	WP_LUGER				// 2	// NOTE: also 32 round 'snail' magazine
-	{   MAX_AMMO_9MM,   1,      32,     2600,   DELAY_LOW,      100,    0,      0,      MOD_MP40                },  //	WP_MP40					// 3
-	{   MAX_AMMO_MAUSER,1,      10,     2500,   DELAY_HIGH,     1200,   0,      0,      MOD_MAUSER              },  //	WP_MAUSER				// 4	// NOTE: authentic clips are 5/10/25 rounds
-	{   MAX_AMMO_FG42,  1,      20,     2000,   DELAY_LOW,      200,    0,      0,      MOD_FG42                },  //	WP_FG42					// 5
-	{   15,             1,      15,     1000,   DELAY_THROW,    1600,   0,      0,      MOD_GRENADE_LAUNCHER    },  //	WP_GRENADE_LAUNCHER		// 6
-	{   5,              1,      1,      1000,   DELAY_SHOULDER, 2000,   0,      0,      MOD_PANZERFAUST         },  //	WP_PANZERFAUST			// 7
-//	{	MAX_AMMO_VENOM,	1,		500,	3000,	750,			30,		5000,	200,	MOD_VENOM				},	//	WP_VENOM				// -
-	{   MAX_AMMO_VENOM, 1,      500,    3000,   750,            45,     5000,   200,    MOD_VENOM               },  //	WP_VENOM				// 8	// JPW NOTE: changed next_shot 50->45 to genlock firing to every server frame (fire rate shouldn't be framerate dependent now)
-	{   150,            1,      150,    1000,   DELAY_LOW,      50,     0,      0,      MOD_FLAMETHROWER        },  //	WP_FLAMETHROWER			// 9
-	{   300,            1,      300,    1000,   DELAY_LOW,      0,      0,      0,      MOD_TESLA               },  //	WP_TESLA				// 10
-//	{	50,				1,		50,		1000,	DELAY_LOW,		1200,	0,		0,		MOD_SPEARGUN			},	//	WP_SPEARGUN				// 11
+	{   MAX_AMMO_9MM,     1,      8,              1500,   DELAY_PISTOL,   400,    0,      0,      MOD_LUGER               },  //	WP_LUGER				// 2	// NOTE: also 32 round 'snail' magazine
+	{   MAX_AMMO_9MM,     1,      32,             2600,   DELAY_LOW,      100,    0,      0,      MOD_MP40                },  //	WP_MP40					// 3
+	{   MAX_AMMO_MAUSER,  1,      10,             2500,   DELAY_HIGH,     1200,   0,      0,      MOD_MAUSER              },  //	WP_MAUSER				// 4	// NOTE: authentic clips are 5/10/25 rounds
+	{   MAX_AMMO_FG42,    1,      20,             2000,   DELAY_LOW,      200,    0,      0,      MOD_FG42                },  //	WP_FG42					// 5
+	{   MAX_GRENADES,     1,      MAX_GRENADES,   1000,   DELAY_THROW,    1600,   0,      0,      MOD_GRENADE_LAUNCHER    },  //	WP_GRENADE_LAUNCHER		// 6
+	{   MAX_PF_ROCKETS,   1,      1,              1000,   DELAY_SHOULDER, 2000,   0,      0,      MOD_PANZERFAUST         },  //	WP_PANZERFAUST			// 7
+//	{	MAX_AMMO_VENOM,	  1,      500,	          3000,   750,            30,     5000,   200,    MOD_VENOM               },	//	WP_VENOM				// -
+	{   MAX_AMMO_VENOM,   1,      500,            3000,   750,            45,     5000,   200,    MOD_VENOM               },  //	WP_VENOM				// 8	// JPW NOTE: changed next_shot 50->45 to genlock firing to every server frame (fire rate shouldn't be framerate dependent now)
+	{   MAX_FUEL,         1,      MAX_FUEL,       1000,   DELAY_LOW,      50,     0,      0,      MOD_FLAMETHROWER        },  //	WP_FLAMETHROWER			// 9
+	{   MAX_CELLS,        1,      MAX_CELLS,      1000,   DELAY_LOW,      0,      0,      0,      MOD_TESLA               },  //	WP_TESLA				// 10
+//	{	50,				  1,      50,             1000,	  DELAY_LOW,      1200,   0,      0,      MOD_SPEARGUN            },	//	WP_SPEARGUN				// 11
+//	{	999,			  0,      999,            0,      50,             200,    0,      0,      MOD_KNIFE2              },	//	WP_KNIFE2				// 12
+	{   MAX_AMMO_45,      1,      8,              1500,   DELAY_PISTOL,   400,    0,      0,      MOD_COLT                },  //	WP_COLT					// 13
+	{   MAX_AMMO_45,      1,      30,             2400,   DELAY_LOW,      120,    0,      0,      MOD_THOMPSON            },  //	WP_THOMPSON				// 14	// NOTE: also 50 round drum magazine
+	{   MAX_AMMO_GARAND,  1,      5,              2500,   DELAY_HIGH,     1200,   0,      0,      MOD_GARAND              },  //	WP_GARAND				// 15	// NOTE: always 5 round clips
+//	{	MAX_AMMO_BAR,	  1,      20,             2000,   DELAY_LOW,      200,    0,      0,      MOD_BAR                 },	//	WP_BAR					// 16
+	{   MAX_PINEAPPLES,   1,      MAX_PINEAPPLES, 1000,   DELAY_THROW,    1600,   0,      0,      MOD_GRENADE_PINEAPPLE   },  //	WP_GRENADE_PINEAPPLE	// 17
+//	{	5,				  1,      5,              1000,   DELAY_SHOULDER, 1200,   0,      0,      MOD_ROCKET_LAUNCHER     },	//	WP_ROCKET_LAUNCHER		// 18
+	{   MAX_AMMO_MAUSER,  1,      10,             3000,   0,              1700,   0,      0,      MOD_SNIPERRIFLE         },  //	WP_SNIPER_GER			// 19
+	{   MAX_AMMO_GARAND,  1,      5,              3000,   0,              1200,   0,      0,      MOD_SNOOPERSCOPE        },  //	WP_SNIPER_AM			// 20
+//	{	MAX_AMMO_VENOM,	  10,     300,            3000,   1200,           1200,   0,      0,      MOD_VENOM_FULL          },	//	WP_VENOM_FULL			// -
+//	{	MAX_AMMO_VENOM,	  10,     300,            3000,   1000,           1000,   0,      0,      MOD_VENOM_FULL          },	//	WP_VENOM_FULL			// 21
+//	{	20,				  1,      20,             1000,   DELAY_LOW,      1200,   0,      0,      MOD_SPEARGUN_CO2        },	//	WP_SPEARGUN_CO2			// 22
+	{   MAX_AMMO_FG42,    1,      20,             2000,   DELAY_LOW,      200,    0,      0,      MOD_FG42SCOPE           },  //	WP_FG42SCOPE			// 23
+//	{	MAX_AMMO_BAR,	  1,      20,             2000,   DELAY_LOW,      90,     0,      0,      MOD_BAR                 },	//	WP_BAR2					// 24
+	{   MAX_AMMO_9MM,     1,      32,             3100,   DELAY_LOW,      110,    700,    300,    MOD_STEN                },  //	WP_STEN					// 25
+	{   MAX_AMMO_9MM,     1,      8,              1500,   DELAY_PISTOL,   400,    0,      0,      MOD_SILENCER            },  //	WP_SILENCER				// 26
+	{   MAX_AMMO_45,      1,      8,              2700,   DELAY_PISTOL,   200,    0,      0,      MOD_AKIMBO              },  //	WP_AKIMBO				// 27
 
-//	{	999,			0,		999,	0,		50,				200,	0,		0,		MOD_KNIFE2				},	//	WP_KNIFE2				// 12
-	{   MAX_AMMO_45,    1,      8,      1500,   DELAY_PISTOL,   400,    0,      0,      MOD_COLT                },  //	WP_COLT					// 13
-	{   MAX_AMMO_45,    1,      30,     2400,   DELAY_LOW,      120,    0,      0,      MOD_THOMPSON            },  //	WP_THOMPSON				// 14	// NOTE: also 50 round drum magazine
-	{   MAX_AMMO_GARAND,1,      5,      2500,   DELAY_HIGH,     1200,   0,      0,      MOD_GARAND              },  //	WP_GARAND				// 15	// NOTE: always 5 round clips
-//	{	MAX_AMMO_BAR,	1,		20,		2000,	DELAY_LOW,		200,	0,		0,		MOD_BAR					},	//	WP_BAR					// 16
-	{   15,             1,      15,     1000,   DELAY_THROW,    1600,   0,      0,      MOD_GRENADE_PINEAPPLE   },  //	WP_GRENADE_PINEAPPLE	// 17
-//	{	5,				1,		5,		1000,	DELAY_SHOULDER,	1200,	0,		0,		MOD_ROCKET_LAUNCHER		},	//	WP_ROCKET_LAUNCHER		// 18
-
-	{   MAX_AMMO_MAUSER,1,      10,     3000,   0,              1700,   0,      0,      MOD_SNIPERRIFLE         },  //	WP_SNIPER_GER			// 19
-	{   MAX_AMMO_GARAND,1,      5,      3000,   0,              1200,   0,      0,      MOD_SNOOPERSCOPE        },  //	WP_SNIPER_AM			// 20
-//	{	MAX_AMMO_VENOM,	10,		300,	3000,	1200,			1200,	0,		0,		MOD_VENOM_FULL			},	//	WP_VENOM_FULL			// -
-//	{	MAX_AMMO_VENOM,	10,		300,	3000,	1000,			1000,	0,		0,		MOD_VENOM_FULL			},	//	WP_VENOM_FULL			// 21
-//	{	20,				1,		20,		1000,	DELAY_LOW,		1200,	0,		0,		MOD_SPEARGUN_CO2		},	//	WP_SPEARGUN_CO2			// 22
-
-	{   MAX_AMMO_FG42,  1,      20,     2000,   DELAY_LOW,      200,    0,      0,      MOD_FG42SCOPE           },  //	WP_FG42SCOPE			// 23
-//	{	MAX_AMMO_BAR,	1,		20,		2000,	DELAY_LOW,		90,		0,		0,		MOD_BAR					},	//	WP_BAR2					// 24
-	{   MAX_AMMO_9MM,   1,      32,     3100,   DELAY_LOW,      110,    700,    300,    MOD_STEN                },  //	WP_STEN					// 25
-	{   MAX_AMMO_9MM,   1,      8,      1500,   DELAY_PISTOL,   400,    0,      0,      MOD_SILENCER            },  //	WP_SILENCER				// 26
-	{   MAX_AMMO_45,    1,      8,      2700,   DELAY_PISTOL,   200,    0,      0,      MOD_AKIMBO              },  //	WP_AKIMBO				// 27
-
-	{   999,            0,      999,    0,      50,             0,      0,      0,      0                       },  //	WP_CLASS_SPECIAL		// 28	//	class_special
-//	{	100,			1,		100,	1000,	DELAY_PISTOL,	900,	0,		0,		MOD_CROSS				},	//	WP_CROSS				// 29
-	{   10,             1,      10,     1000,   DELAY_THROW,    1600,   0,      0,      MOD_DYNAMITE            },  //	WP_DYNAMITE				// 30
-//	{	10,				1,		10,		1000,	DELAY_THROW,	1600,	0,		0,		MOD_DYNAMITE			},	//	WP_DYNAMITE2			// 31
+	{   999,              0,      999,            0,      50,             0,      0,      0,      0                       },  //	WP_CLASS_SPECIAL		// 28	//	class_special
+//	{	100,			  1,      100,	          1000,   DELAY_PISTOL,   900,    0,      0,      MOD_CROSS               },	//	WP_CROSS				// 29
+	{   MAX_DYNAMITE,     1,      MAX_DYNAMITE,   1000,   DELAY_THROW,    1600,   0,      0,      MOD_DYNAMITE            },  //	WP_DYNAMITE				// 30
+//	{	10,				  1,      10,		      1000,   DELAY_THROW,    1600,   0,      0,      MOD_DYNAMITE            },	//	WP_DYNAMITE2			// 31
 
 // stubs for some "not-real" weapons (so they always return "yes, you have enough ammo for that gauntlet", etc.)
-//	{	5,				1,		5,		1000,	DELAY_SHOULDER,	1200,	0,		0,		0 /*mod_prox*/			},	//	WP_PROX					// 32
-	{   999,            0,      999,    0,      50,             0,      0,      0,      0                       },  //	WP_MONSTER_ATTACK1		// 33
-	{   999,            0,      999,    0,      50,             0,      0,      0,      0                       },  //	WP_MONSTER_ATTACK2		// 34
-	{   999,            0,      999,    0,      50,             0,      0,      0,      0                       },  //	WP_MONSTER_ATTACK3		// 35
-	{   999,            0,      999,    0,      50,             0,      0,      0,      0                       }   //	WP_GAUNTLET				// 36
+//	{	5,				  1,      5,              1000,   DELAY_SHOULDER, 1200,   0,      0,      0 /*mod_prox*/          },	//	WP_PROX					// 32
+	{   999,              0,      999,            0,      50,             0,      0,      0,      0                       },  //	WP_MONSTER_ATTACK1		// 33
+	{   999,              0,      999,            0,      50,             0,      0,      0,      0                       },  //	WP_MONSTER_ATTACK2		// 34
+	{   999,              0,      999,            0,      50,             0,      0,      0,      0                       },  //	WP_MONSTER_ATTACK3		// 35
+	{   999,              0,      999,            0,      50,             0,      0,      0,      0                       }   //	WP_GAUNTLET				// 36
 };
 
+// same as above, but not updated by cvar
+ammotable_t staticAmmoTable[] = {
+	//	MAX				  USES	  MAX		      RELOAD  FIRE			  NEXT	  HEAT,	  COOL,	  MOD,	...
+	//	AMMO			  AMT.	  CLIP	          TIME	  DELAY			  SHOT
+	{   0,                0,      0,              0,      50,             0,      0,      0,      0                       },  //	WP_NONE					// 0
+
+	{   999,              0,      999,            0,      50,             200,    0,      0,      MOD_KNIFE               },  //	WP_KNIFE				// 1
+
+	{   MAX_AMMO_9MM,     1,      8,              1500,   DELAY_PISTOL,   400,    0,      0,      MOD_LUGER               },  //	WP_LUGER				// 2	// NOTE: also 32 round 'snail' magazine
+	{   MAX_AMMO_9MM,     1,      32,             2600,   DELAY_LOW,      100,    0,      0,      MOD_MP40                },  //	WP_MP40					// 3
+	{   MAX_AMMO_MAUSER,  1,      10,             2500,   DELAY_HIGH,     1200,   0,      0,      MOD_MAUSER              },  //	WP_MAUSER				// 4	// NOTE: authentic clips are 5/10/25 rounds
+	{   MAX_AMMO_FG42,    1,      20,             2000,   DELAY_LOW,      200,    0,      0,      MOD_FG42                },  //	WP_FG42					// 5
+	{   MAX_GRENADES,     1,      MAX_GRENADES,   1000,   DELAY_THROW,    1600,   0,      0,      MOD_GRENADE_LAUNCHER    },  //	WP_GRENADE_LAUNCHER		// 6
+	{   MAX_PF_ROCKETS,   1,      1,              1000,   DELAY_SHOULDER, 2000,   0,      0,      MOD_PANZERFAUST         },  //	WP_PANZERFAUST			// 7
+//	{	MAX_AMMO_VENOM,	  1,      500,	          3000,   750,            30,     5000,   200,    MOD_VENOM               },	//	WP_VENOM				// -
+	{   MAX_AMMO_VENOM,   1,      500,            3000,   750,            45,     5000,   200,    MOD_VENOM               },  //	WP_VENOM				// 8	// JPW NOTE: changed next_shot 50->45 to genlock firing to every server frame (fire rate shouldn't be framerate dependent now)
+	{   MAX_FUEL,         1,      MAX_FUEL,       1000,   DELAY_LOW,      50,     0,      0,      MOD_FLAMETHROWER        },  //	WP_FLAMETHROWER			// 9
+	{   MAX_CELLS,        1,      MAX_CELLS,      1000,   DELAY_LOW,      0,      0,      0,      MOD_TESLA               },  //	WP_TESLA				// 10
+//	{	50,				  1,      50,             1000,	  DELAY_LOW,      1200,   0,      0,      MOD_SPEARGUN            },	//	WP_SPEARGUN				// 11
+//	{	999,			  0,      999,            0,      50,             200,    0,      0,      MOD_KNIFE2              },	//	WP_KNIFE2				// 12
+	{   MAX_AMMO_45,      1,      8,              1500,   DELAY_PISTOL,   400,    0,      0,      MOD_COLT                },  //	WP_COLT					// 13
+	{   MAX_AMMO_45,      1,      30,             2400,   DELAY_LOW,      120,    0,      0,      MOD_THOMPSON            },  //	WP_THOMPSON				// 14	// NOTE: also 50 round drum magazine
+	{   MAX_AMMO_GARAND,  1,      5,              2500,   DELAY_HIGH,     1200,   0,      0,      MOD_GARAND              },  //	WP_GARAND				// 15	// NOTE: always 5 round clips
+//	{	MAX_AMMO_BAR,	  1,      20,             2000,   DELAY_LOW,      200,    0,      0,      MOD_BAR                 },	//	WP_BAR					// 16
+	{   MAX_PINEAPPLES,   1,      MAX_PINEAPPLES, 1000,   DELAY_THROW,    1600,   0,      0,      MOD_GRENADE_PINEAPPLE   },  //	WP_GRENADE_PINEAPPLE	// 17
+//	{	5,				  1,      5,              1000,   DELAY_SHOULDER, 1200,   0,      0,      MOD_ROCKET_LAUNCHER     },	//	WP_ROCKET_LAUNCHER		// 18
+	{   MAX_AMMO_MAUSER,  1,      10,             3000,   0,              1700,   0,      0,      MOD_SNIPERRIFLE         },  //	WP_SNIPER_GER			// 19
+	{   MAX_AMMO_GARAND,  1,      5,              3000,   0,              1200,   0,      0,      MOD_SNOOPERSCOPE        },  //	WP_SNIPER_AM			// 20
+//	{	MAX_AMMO_VENOM,	  10,     300,            3000,   1200,           1200,   0,      0,      MOD_VENOM_FULL          },	//	WP_VENOM_FULL			// -
+//	{	MAX_AMMO_VENOM,	  10,     300,            3000,   1000,           1000,   0,      0,      MOD_VENOM_FULL          },	//	WP_VENOM_FULL			// 21
+//	{	20,				  1,      20,             1000,   DELAY_LOW,      1200,   0,      0,      MOD_SPEARGUN_CO2        },	//	WP_SPEARGUN_CO2			// 22
+	{   MAX_AMMO_FG42,    1,      20,             2000,   DELAY_LOW,      200,    0,      0,      MOD_FG42SCOPE           },  //	WP_FG42SCOPE			// 23
+//	{	MAX_AMMO_BAR,	  1,      20,             2000,   DELAY_LOW,      90,     0,      0,      MOD_BAR                 },	//	WP_BAR2					// 24
+	{   MAX_AMMO_9MM,     1,      32,             3100,   DELAY_LOW,      110,    700,    300,    MOD_STEN                },  //	WP_STEN					// 25
+	{   MAX_AMMO_9MM,     1,      8,              1500,   DELAY_PISTOL,   400,    0,      0,      MOD_SILENCER            },  //	WP_SILENCER				// 26
+	{   MAX_AMMO_45,      1,      8,              2700,   DELAY_PISTOL,   200,    0,      0,      MOD_AKIMBO              },  //	WP_AKIMBO				// 27
+
+	{   999,              0,      999,            0,      50,             0,      0,      0,      0                       },  //	WP_CLASS_SPECIAL		// 28	//	class_special
+//	{	100,			  1,      100,	          1000,   DELAY_PISTOL,   900,    0,      0,      MOD_CROSS               },	//	WP_CROSS				// 29
+	{   MAX_DYNAMITE,     1,      MAX_DYNAMITE,   1000,   DELAY_THROW,    1600,   0,      0,      MOD_DYNAMITE            },  //	WP_DYNAMITE				// 30
+//	{	10,				  1,      10,		      1000,   DELAY_THROW,    1600,   0,      0,      MOD_DYNAMITE            },	//	WP_DYNAMITE2			// 31
+
+// stubs for some "not-real" weapons (so they always return "yes, you have enough ammo for that gauntlet", etc.)
+//	{	5,				  1,      5,              1000,   DELAY_SHOULDER, 1200,   0,      0,      0 /*mod_prox*/          },	//	WP_PROX					// 32
+	{   999,              0,      999,            0,      50,             0,      0,      0,      0                       },  //	WP_MONSTER_ATTACK1		// 33
+	{   999,              0,      999,            0,      50,             0,      0,      0,      0                       },  //	WP_MONSTER_ATTACK2		// 34
+	{   999,              0,      999,            0,      50,             0,      0,      0,      0                       },  //	WP_MONSTER_ATTACK3		// 35
+	{   999,              0,      999,            0,      50,             0,      0,      0,      0                       }   //	WP_GAUNTLET				// 36
+};
 
 //----(SA)	moved in here so both games can get to it
 int weapAlts[] = {
@@ -1899,14 +1953,9 @@ weapon_class_special (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
 // jpw
 */
 
-
-
-
 	//
 	// AMMO ITEMS
 	//
-
-
 
 /*QUAKED ammo_9mm_small (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
 used by: Luger pistol, MP40 machinegun
@@ -1929,8 +1978,10 @@ model="models/powerups/ammo/am9mm_s.md3"
 		WP_LUGER,
 		"",                  // precache
 		"",                  // sounds
-		{32,24,16,16}
+	//	{32,24,16,16}
+		{32,32,24,16}	// Knightmare- why do these mags always have to be half-full?
 	},
+
 /*QUAKED ammo_9mm (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
 used by: Luger pistol, MP40 machinegun
 
@@ -1952,8 +2003,10 @@ model="models/powerups/ammo/am9mm_m.md3"
 		WP_LUGER,
 		"",                  // precache
 		"",                  // sounds
-		{64,48,32,32}
+	//	{64,48,32,32}
+		{64,64,48,32}	// Knightmare- why do these mags always have to be half-full?
 	},
+
 /*QUAKED ammo_9mm_large (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
 used by: Luger pistol, MP40 machinegun
 
@@ -1975,9 +2028,9 @@ model="models/powerups/ammo/am9mm_l.md3"
 		WP_LUGER,
 		"",                  // precache
 		"",                  // sounds
-		{96,64,48,48}
+	//	{96,64,48,48}
+		{192,192,144,96}	// Knightmare- this thing should be 6 whole 32-round mags!
 	},
-
 
 /*QUAKED ammo_45cal_small (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
 used by: Thompson, Colt
@@ -2000,8 +2053,10 @@ model="models/powerups/ammo/am45cal_s.md3"
 		WP_COLT,
 		"",                  // precache
 		"",                  // sounds
-		{30,20,15,15}
+	//	{30,20,15,15}
+		{45,45,30,25}		// Knightmare changed	
 	},
+
 /*QUAKED ammo_45cal (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
 used by: Thompson, Colt
 
@@ -2023,8 +2078,10 @@ model="models/powerups/ammo/am45cal_m.md3"
 		WP_COLT,
 		"",                  // precache
 		"",                  // sounds
-		{60,45,30,30}
+	//	{60,45,30,30}
+		{90,90,60,50}		// Knightmare changed
 	},
+
 /*QUAKED ammo_45cal_large (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
 used by: Thompson, Colt
 
@@ -2046,11 +2103,9 @@ model="models/powerups/ammo/am45cal_l.md3"
 		WP_COLT,
 		"",                  // precache
 		"",                  // sounds
-		{90,60,45,45}
+	//	{90,60,45,45}
+		{135,135,90,75}		// Knightmare changed
 	},
-
-
-
 
 /*QUAKED ammo_792mm_small (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
 used by: Mauser rifle, FG42
@@ -2065,7 +2120,7 @@ model="models/powerups/ammo/am792mm_s.md3"
 		  0, 0, 0,    0 },
 		"icons/icona_machinegun",    // icon
 		NULL,                       // ammo icon
-		"7.92mm Rounds",         // pickup
+		"7.92mm Rounds",			// pickup
 		50,
 		IT_AMMO,
 		WP_MAUSER,
@@ -2073,8 +2128,10 @@ model="models/powerups/ammo/am792mm_s.md3"
 		WP_MAUSER,
 		"",                          // precache
 		"",                          // sounds
-		{16,12,8,8}
+	//	{16,12,8,8}
+		{16,16,12,8}		// Knightmare changed
 	},
+
 /*QUAKED ammo_792mm (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
 used by: Mauser rifle, FG42
 
@@ -2088,7 +2145,7 @@ model="models/powerups/ammo/am792mm_m.md3"
 		  0, 0, 0,    0 },
 		"icons/icona_machinegun",    // icon
 		NULL,                       // ammo icon
-		"7.92mm",                // pickup			//----(SA)	changed
+		"7.92mm",             // pickup			//----(SA)	changed
 		10,
 		IT_AMMO,
 		WP_MAUSER,
@@ -2096,8 +2153,10 @@ model="models/powerups/ammo/am792mm_m.md3"
 		WP_MAUSER,
 		"",                          // precache
 		"",                          // sounds
-		{32,24,16,16}
+	//	{32,24,16,16}
+		{32,32,24,16}		// Knightmare changed
 	},
+
 /*QUAKED ammo_792mm_large (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
 used by: Mauser rifle, FG42
 
@@ -2119,11 +2178,9 @@ model="models/powerups/ammo/am792mm_l.md3"
 		WP_MAUSER,
 		"",                          // precache
 		"",                          // sounds
-		{48,32,24,24}
+	//	{48,32,24,24}
+		{64,64,48,32}		// Knightmare changed, 24 is too little for that box
 	},
-
-
-
 
 /*QUAKED ammo_30cal_small (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
 used by: Garand rifle
@@ -2146,7 +2203,8 @@ model="models/powerups/ammo/am30cal_s.md3"
 		WP_GARAND,
 		"",                          // precache
 		"",                          // sounds
-		{5,2,2,2}
+	//	{5,2,2,2}
+		{8,8,6,5}			// Knightmare changed
 	},
 /*QUAKED ammo_30cal (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
 used by: Garand rifle
@@ -2169,7 +2227,8 @@ model="models/powerups/ammo/am30cal_m.md3"
 		WP_GARAND,
 		"",                          // precache
 		"",                          // sounds
-		{5,5,5,5    }
+	//	{5,5,5,5}
+		{16,16,12,10}		// Knightmare changed
 	},
 /*QUAKED ammo_30cal_large (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
 used by: Garand rifle
@@ -2192,11 +2251,9 @@ model="models/powerups/ammo/am30cal_l.md3"
 		WP_GARAND,
 		"",                          // precache
 		"",                          // sounds
-		{10,10,10,5}
+	//	{10,10,10,5}
+		{40,40,30,25}		// Knightmare changed
 	},
-
-
-
 
 /*QUAKED ammo_127mm (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
 used by: Venom gun
@@ -2219,7 +2276,8 @@ model="models/powerups/ammo/am127mm.md3"
 		WP_VENOM,
 		"",                          // precache
 		"",                          // sounds
-		{100,75,50,50}
+	//	{100,75,50,50}
+		{125,125,100,75}		// Knightmare changed
 	},
 
 /*QUAKED ammo_grenades (.3 .3 1) (-16 -16 -16) (16 16 16) SUSPENDED SPIN - RESPAWN
@@ -2314,7 +2372,8 @@ model="models/powerups/ammo/amcell.md3"
 		WP_TESLA,
 		"",                  // precache
 		"",                  // sounds
-		{100,75,50,50}
+	//	{100,75,50,50}
+		{100,100,75,50}		// Knightmare changed
 	},
 
 
@@ -2340,7 +2399,8 @@ model="models/powerups/ammo/amfuel.md3"
 		WP_FLAMETHROWER,
 		"",                  // precache
 		"",                  // sounds
-		{100,75,50,50}
+	//	{100,75,50,50}
+		{100,100,75,50}		// Knightmare changed
 	},
 
 
@@ -3461,6 +3521,46 @@ model="models/powerups/keys/key.md3"
 
 int bg_numItems = sizeof( bg_itemlist ) / sizeof( bg_itemlist[0] ) - 1;
 
+// Knightmare added
+#if defined GAMEDLL || defined CGAMEDLL
+void BG_InitAmmoTable( void ) {
+	ammoTable[WP_LUGER].maxammo = sk_max_9mm.integer;
+	ammoTable[WP_SILENCER].maxammo = sk_max_9mm.integer;
+	ammoTable[WP_MP40].maxammo = sk_max_9mm.integer;
+	ammoTable[WP_STEN].maxammo = sk_max_9mm.integer;
+
+	ammoTable[WP_COLT].maxammo = sk_max_45cal.integer;
+	ammoTable[WP_AKIMBO].maxammo = sk_max_45cal.integer;
+	ammoTable[WP_THOMPSON].maxammo = sk_max_45cal.integer;
+
+	ammoTable[WP_MAUSER].maxammo = sk_max_792mm.integer;
+	ammoTable[WP_SNIPERRIFLE].maxammo = sk_max_792mm.integer;
+	ammoTable[WP_FG42].maxammo = sk_max_792mm.integer;
+	ammoTable[WP_FG42SCOPE].maxammo = sk_max_792mm.integer;
+
+	ammoTable[WP_GARAND].maxammo = sk_max_30cal.integer;
+	ammoTable[WP_SNOOPERSCOPE].maxammo = sk_max_30cal.integer;
+
+	ammoTable[WP_VENOM].maxammo = sk_max_127mm.integer;
+
+	ammoTable[WP_PANZERFAUST].maxammo = sk_max_pf_rockets.integer;
+
+	ammoTable[WP_FLAMETHROWER].maxammo = sk_max_fuel.integer;
+	ammoTable[WP_FLAMETHROWER].maxclip = sk_max_fuel.integer;
+
+	ammoTable[WP_TESLA].maxammo = sk_max_cells.integer;
+	ammoTable[WP_TESLA].maxclip = sk_max_cells.integer;
+
+	ammoTable[WP_GRENADE_LAUNCHER].maxammo = sk_max_grenades.integer;
+	ammoTable[WP_GRENADE_LAUNCHER].maxclip = sk_max_grenades.integer;
+
+	ammoTable[WP_GRENADE_PINEAPPLE].maxammo = sk_max_pineapples.integer;
+	ammoTable[WP_GRENADE_PINEAPPLE].maxclip = sk_max_pineapples.integer;
+
+	ammoTable[WP_DYNAMITE].maxammo = sk_max_dynamite.integer;
+	ammoTable[WP_DYNAMITE].maxclip = sk_max_dynamite.integer;
+}
+#endif
 
 /*
 ==============
@@ -3876,7 +3976,9 @@ qboolean    BG_CanItemBeGrabbed( const entityState_t *ent, const playerState_t *
 					return qfalse;
 				}
 			}
-		} else {
+		}
+		else {
+//#ifdef GAMEDLL	// Knightmare- disabled for cgame
 			if ( COM_BitCheck( ps->weapons, item->giTag ) ) {               // you have the weap
 				if ( isClipOnly( item->giTag ) ) {
 					if ( ps->ammoclip[item->giAmmoIndex] >= ammoTable[item->giAmmoIndex].maxclip ) {
@@ -3888,13 +3990,14 @@ qboolean    BG_CanItemBeGrabbed( const entityState_t *ent, const playerState_t *
 					}
 				}
 			}
+//#endif
 		}
 		// JPW
 		return qtrue;
 
 	case IT_AMMO:
+//#ifdef GAMEDLL	// Knightmare- disabled for cgame
 		ammoweap = BG_FindAmmoForWeapon( item->giTag );
-
 		if ( isClipOnly( ammoweap ) ) {
 			if ( ps->ammoclip[ammoweap] >= ammoTable[ammoweap].maxclip ) {
 				return qfalse;
@@ -3904,13 +4007,16 @@ qboolean    BG_CanItemBeGrabbed( const entityState_t *ent, const playerState_t *
 		if ( ps->ammo[ammoweap] >= ammoTable[ammoweap].maxammo ) {
 			return qfalse;
 		}
-
+//#endif
 		return qtrue;
 
 	case IT_ARMOR:
 		// we also clamp armor to the maxhealth for handicapping
-//			if ( ps->stats[STAT_ARMOR] >= ps->stats[STAT_MAX_HEALTH] * 2 ) {
-		if ( ps->stats[STAT_ARMOR] >= 100 ) {
+#if defined GAMEDLL || defined CGAMEDLL
+		if ( ps->stats[STAT_ARMOR] >= sk_max_armor.integer ) {	// Knightmare changed, use variable
+#else
+		if ( ps->stats[STAT_ARMOR] >= ps->stats[STAT_MAX_HEALTH] * 2 ) {
+#endif
 			return qfalse;
 		}
 		return qtrue;
@@ -3919,8 +4025,13 @@ qboolean    BG_CanItemBeGrabbed( const entityState_t *ent, const playerState_t *
 		if ( ent->density == ( 1 << 9 ) ) { // density tracks how many uses left
 			return qfalse;
 		}
-
-		if ( ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH] ) {
+		// Knightmare- can always pick up small health
+	//	if ( ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH] ) {
+#if defined GAMEDLL || defined CGAMEDLL
+		if ( (item->quantity > 5 || sk_rot_health.value) && (ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH]) ) {
+#else
+		if ( (item->quantity > 5) && (ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH]) ) {
+#endif
 			return qfalse;
 		}
 		return qtrue;

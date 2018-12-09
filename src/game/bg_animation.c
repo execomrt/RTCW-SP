@@ -314,7 +314,8 @@ void QDECL BG_AnimParseError( const char *msg, ... ) {
 	char text[1024];
 
 	va_start( argptr, msg );
-	vsprintf( text, msg, argptr );
+//	vsprintf( text, msg, argptr );
+	Q_vsnprintf( text, sizeof(text), msg, argptr );	// Knightmare- buffer overflow fix
 	va_end( argptr );
 
 	if ( globalFilename ) {

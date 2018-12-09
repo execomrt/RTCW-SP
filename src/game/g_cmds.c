@@ -27,6 +27,7 @@ If you have questions concerning this license or the applicable additional terms
 */
 
 #include "g_local.h"
+#include "km_cvar.h"	// Knightmare added
 
 /*
 ==================
@@ -1572,7 +1573,7 @@ int Cmd_WolfKick_f( gentity_t *ent ) {
 	int kicktime = level.time;
 	qboolean solidKick = qfalse;    // don't play "hit" sound on a trigger unless it's an func_invisible_user
 
-	int damage = 15;
+	int damage = sk_plr_dmg_kick.integer;	// Knightmare- was	15
 
 	if ( ent->client->ps.leanf ) {
 		return 0;   // no kick when leaning
@@ -1854,9 +1855,9 @@ void ClientDamage( gentity_t *clent, int entnum, int enemynum, int id ) {
 			VectorSubtract( ent->r.currentOrigin, enemy->r.currentOrigin, vec );
 			VectorNormalize( vec );
 			if ( !( enemy->r.svFlags & SVF_CASTAI ) ) {
-				G_Damage( ent, enemy, enemy, vec, ent->r.currentOrigin, 8, 0, MOD_LIGHTNING );
+				G_Damage( ent, enemy, enemy, vec, ent->r.currentOrigin, sk_plr_dmg_tesla.integer, 0, MOD_LIGHTNING );	// Knightmare- was 8
 			} else {
-				G_Damage( ent, enemy, enemy, vec, ent->r.currentOrigin, 4, 0, MOD_LIGHTNING );
+				G_Damage( ent, enemy, enemy, vec, ent->r.currentOrigin, sk_ai_dmg_tesla.integer, 0, MOD_LIGHTNING );	// Knightmare- was 4
 			}
 		}
 		break;
