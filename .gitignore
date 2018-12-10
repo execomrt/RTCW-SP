@@ -2,11 +2,11 @@ src/.vs
 src/Debug
 src/Release
 src/Win32/Debug
-src/Win32/Release
 src/botlib/Debug
 src/botlib/Release
 src/botlib/Win32
 src/botlib/x64
+src/cgame/Debug
 src/cgame/Release
 src/cgame/Win32
 src/cgame/x64
@@ -31,7 +31,8 @@ src/ui/Release
 src/ui/Win32
 src/ui/x64
 src/win32/Debug
-src/win32/Release
-src/win32/Win32
+src/win32/Release/*.log
+src/win32/Release/*.res
+src/win32/Release/wolf.tlog
 src/win32/x64
 src/win32/*.res

@@ -13,7 +13,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LocalDebuggerWorkingDirectory>F:\SteamApps\steamapps\common\Return to Castle Wolfenstein</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommand>D:\Home\Wolf\src\win32\Release\WolfSP.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommand>D:\Github\RTCW-SP\src\win32\Release\WolfSP.exe</LocalDebuggerCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LocalDebuggerWorkingDirectory>F:\SteamApps\steamapps\common\Return to Castle Wolfenstein</LocalDebuggerWorkingDirectory>
