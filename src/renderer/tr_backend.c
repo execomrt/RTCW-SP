@@ -332,23 +332,49 @@ void GL_State( unsigned long stateBits ) {
 	//
 	// alpha test
 	//
+	
 	if ( diff & GLS_ATEST_BITS ) {
 		switch ( stateBits & GLS_ATEST_BITS )
 		{
 		case 0:
-			glDisable( GL_ALPHA_TEST );
+			if (r_ati_fsaa_samples->integer) {
+				glDisable (GL_SAMPLE_ALPHA_TO_COVERAGE);
+			}
+			else {
+				glDisable(GL_ALPHA_TEST);
+			}
 			break;
 		case GLS_ATEST_GT_0:
-			glEnable( GL_ALPHA_TEST );
-			glAlphaFunc( GL_GREATER, 0.0f );
+			if (r_ati_fsaa_samples->integer) {
+				glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+				glSampleCoverage(0.0f, GL_FALSE);
+			}
+			else {
+				glEnable(GL_ALPHA_TEST);
+				glAlphaFunc(GL_GREATER, 0.0f);
+			}
 			break;
 		case GLS_ATEST_LT_80:
-			glEnable( GL_ALPHA_TEST );
-			glAlphaFunc( GL_LESS, 0.5f );
+			if (r_ati_fsaa_samples->integer) {
+				glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+				glSampleCoverage(0.5f, GL_TRUE);
+			}
+			else
+			{
+				glEnable(GL_ALPHA_TEST);
+				glAlphaFunc(GL_LESS, 0.5f);
+			}
 			break;
 		case GLS_ATEST_GE_80:
-			glEnable( GL_ALPHA_TEST );
-			glAlphaFunc( GL_GEQUAL, 0.5f );
+			if (r_ati_fsaa_samples->integer) {
+				glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+				glSampleCoverage(0.5f, GL_FALSE);
+			}
+			else
+			{
+				glEnable(GL_ALPHA_TEST);
+				glAlphaFunc(GL_GEQUAL, 0.5f);
+			}
 			break;
 		default:
 			assert( 0 );
