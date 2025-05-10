@@ -204,25 +204,25 @@ static ignoreField_t castStateIgnoreFields[] = {
 // persistant data is optionally carried across level changes
 // !! WARNING: cannot save pointer or string variables
 typedef struct {
-	int ofs;
-	int len;
+	size_t ofs;
+	size_t len;
 } persField_t;
 
 static persField_t gentityPersFields[] = {
-	{FOFS( health ),              sizeof( int )},
+	{FOFS( health ),              sizeof(size_t)},
 	{0, 0}
 };
 
 static persField_t gclientPersFields[] = {
-	{CFOFS( ps.weapon ),          sizeof( int )},
-	{CFOFS( ps.ammo[0] ),         sizeof( int ) * MAX_WEAPONS},
-	{CFOFS( ps.ammoclip[0] ),     sizeof( int ) * MAX_WEAPONS}, //----(SA)	added for ammo in clip
-	{CFOFS( ps.persistant[0] ),   sizeof( int ) * MAX_PERSISTANT},
-	{CFOFS( ps.stats[0] ),        sizeof( int ) * MAX_STATS},
-	{CFOFS( ps.weapons[0] ),      sizeof( int ) * MAX_WEAPONS / ( sizeof( int ) * 8 )}, // //----(SA)	added.  weapons owned got moved outside stats[]
-	{CFOFS( ps.powerups[0] ),     sizeof( int ) * MAX_POWERUPS},
-	{CFOFS( ps.holdable[0] ),     sizeof( int ) * MAX_HOLDABLE},    //----(SA)	added
-	{CFOFS( ps.holding ),         sizeof( int )},                   //----(SA)	added
+	{CFOFS( ps.weapon ),          sizeof( size_t )},
+	{CFOFS( ps.ammo[0] ),         sizeof( size_t ) * MAX_WEAPONS},
+	{CFOFS( ps.ammoclip[0] ),     sizeof( size_t ) * MAX_WEAPONS}, //----(SA)	added for ammo in clip
+	{CFOFS( ps.persistant[0] ),   sizeof( size_t ) * MAX_PERSISTANT},
+	{CFOFS( ps.stats[0] ),        sizeof( size_t ) * MAX_STATS},
+	{CFOFS( ps.weapons[0] ),      sizeof( size_t ) * MAX_WEAPONS / ( sizeof( int ) * 8 )}, // //----(SA)	added.  weapons owned got moved outside stats[]
+	{CFOFS( ps.powerups[0] ),     sizeof( size_t ) * MAX_POWERUPS},
+	{CFOFS( ps.holdable[0] ),     sizeof( size_t ) * MAX_HOLDABLE},    //----(SA)	added
+	{CFOFS( ps.holding ),         sizeof( size_t )},                   //----(SA)	added
 
 	{0, 0}
 };

@@ -1267,7 +1267,55 @@ void Sys_Init( void ) {
 //=======================================================================
 
 int totalMsec, countMsec;
+#pragma comment(lib, "Version.lib") 
+#pragma comment(lib, "Comctl32.lib")
+#pragma comment(linker, \
+	"\"/manifestdependency:type='Win32' "\
+	"name='Microsoft.Windows.Common-Controls' "\
+	"version='6.0.0.0' "\
+	"processorArchitecture='*' "\
+	"publicKeyToken='6595b64144ccf1df' "\
+	"language='*'\"")
 
+#include <ShellScalingAPI.h>
+#include <VersionHelpers.h>
+typedef const char* (CDECL* PFN_wine_get_version)(void);
+typedef BOOL(WINAPI* PFN_SetProcessDpiAwarenessContext)(DPI_AWARENESS_CONTEXT);
+typedef BOOL(WINAPI* PFN_SetProcessDpiAwareness)(PROCESS_DPI_AWARENESS);
+typedef BOOL(WINAPI* PFN_GetDpiForMonitor)(HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT* dpiX, UINT* dpiY);
+void EnableHighDPIAwareness() {
+	if (!IsWindows8OrGreater()) return;
+
+	HMODULE shcore = LoadLibraryA("shcore.dll");
+	HMODULE user32 = LoadLibraryA("user32.dll");
+
+	if (!shcore || !user32) return;
+
+	PFN_SetProcessDpiAwareness _SetProcessDpiAwareness =
+		(PFN_SetProcessDpiAwareness)GetProcAddress(shcore, "SetProcessDpiAwareness");
+	PFN_SetProcessDpiAwarenessContext _SetProcessDpiAwarenessContext =
+		(PFN_SetProcessDpiAwarenessContext)GetProcAddress(user32, "SetProcessDpiAwarenessContext");
+	PFN_GetDpiForMonitor _GetDpiForMonitor =
+		(PFN_GetDpiForMonitor)GetProcAddress(shcore, "GetDpiForMonitor");
+
+	if (_SetProcessDpiAwarenessContext) {
+		_SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+	}
+	else if (_SetProcessDpiAwareness) {
+		_SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+	}
+
+	if (_GetDpiForMonitor) {
+		HMONITOR monitor = MonitorFromWindow(NULL, MONITOR_DEFAULTTONEAREST);
+		UINT xDPI, yDPI;
+		if (SUCCEEDED(_GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &xDPI, &yDPI))) {
+			// Use xDPI/yDPI as needed
+		}
+	}
+
+	FreeLibrary(shcore);
+	FreeLibrary(user32);
+}
 /*
 ==================
 WinMain
@@ -1277,6 +1325,8 @@ WinMain
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow ) {
 	char cwd[MAX_OSPATH];
 	int startTime, endTime;
+
+	EnableHighDPIAwareness();
 
 	// should never get a previous instance in Win32
 	if ( hPrevInstance ) {

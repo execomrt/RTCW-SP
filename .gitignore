@@ -36,3 +36,4 @@ src/win32/Release/*.res
 src/win32/Release/wolf.tlog
 src/win32/x64
 src/win32/*.res
+/build

@@ -391,5 +391,6 @@ char    *Sys_DefaultHomePath( void ) {
 }
 
 char *Sys_DefaultInstallPath( void ) {
-	return Sys_Cwd();
+	//return Sys_Cwd();
+	return "D:\\SteamLibrary\\steamapps\\common\\Return to Castle Wolfenstein";
 }

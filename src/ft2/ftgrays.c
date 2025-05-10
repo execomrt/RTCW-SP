@@ -1042,7 +1042,7 @@ void  shell_sort( PCell cells,
 #ifdef QUICK_SORT
 
 /* This is a non-recursive quicksort that directly process our cells     */
-/* array.  It should be faster than calling the stdlib qsort(), and we   */
+/* array.  It should be faster than calling the stdlib qsort_function(), and we   */
 /* can even tailor our insertion threshold...                            */
 
 #define QSORT_THRESHOLD  9  /* below this size, a sub-array will be sorted */

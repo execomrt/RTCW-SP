@@ -431,7 +431,7 @@ int vmMain( int command, int arg0, int arg1, int arg2, int arg3, int arg4, int a
 		G_ShutdownGame( arg0 );
 		return 0;
 	case GAME_CLIENT_CONNECT:
-		return (int)ClientConnect( arg0, arg1, arg2 );
+		return (size_t)ClientConnect( arg0, arg1, arg2 );
 	case GAME_CLIENT_THINK:
 		ClientThink( arg0 );
 		return 0;
@@ -1785,7 +1785,7 @@ void CalculateRanks( void ) {
 		}
 	}
 
-	qsort( level.sortedClients, level.numConnectedClients,
+	qsort_function( level.sortedClients, level.numConnectedClients,
 		   sizeof( level.sortedClients[0] ), SortRanks );
 
 	// set the rank value for all clients that are connected and not spectators

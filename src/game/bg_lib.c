@@ -131,7 +131,7 @@ cmp_t *cmp;
 }
 
 void
-qsort( a, n, es, cmp )
+qsort_function( a, n, es, cmp )
 void *a;
 size_t n, es;
 cmp_t *cmp;
@@ -203,7 +203,7 @@ loop:   SWAPINIT( a, es );
 	r = min( pd - pc, pn - pd - es );
 	vecswap( pb, pn - r, r );
 	if ( ( r = pb - pa ) > es ) {
-		qsort( a, r / es, es, cmp );
+		qsort_function( a, r / es, es, cmp );
 	}
 	if ( ( r = pd - pc ) > es ) {
 		/* Iterate rather than recurse to save stack space */
@@ -211,7 +211,7 @@ loop:   SWAPINIT( a, es );
 		n = r / es;
 		goto loop;
 	}
-/*		qsort(pn - r, r / es, es, cmp);*/
+/*		qsort_function(pn - r, r / es, es, cmp);*/
 }
 
 //==================================================================================
@@ -625,7 +625,7 @@ double tan( double x ) {
 
 
 static int randSeed = 0;
-
+#ifndef _MSC_VER
 void    srand( unsigned seed ) {
 	randSeed = seed;
 }
@@ -770,6 +770,7 @@ double _atof( const char **stringPtr ) {
 	return value * sign;
 }
 
+#endif 
 
 #if !defined( _MSC_VER ) && !defined( __linux__ )
 

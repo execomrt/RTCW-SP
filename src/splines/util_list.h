@@ -347,7 +347,7 @@ inline void idList<type>::Sort( cmp_t *compare ) {
 		return;
 	}
 
-	qsort( ( void * )m_list, ( size_t )m_num, sizeof( type ), compare );
+	qsort_function( ( void * )m_list, ( size_t )m_num, sizeof( type ), compare );
 }
 
 #endif /* !__UTIL_LIST_H__ */
