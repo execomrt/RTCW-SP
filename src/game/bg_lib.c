@@ -216,6 +216,7 @@ loop:   SWAPINIT( a, es );
 
 //==================================================================================
 
+#ifndef _MSC_VER
 
 // this file is excluded from release builds because of intrinsics
 
@@ -291,6 +292,7 @@ char *strstr( const char *string, const char *strCharSet ) {
 	}
 	return (char *)0;
 }
+#endif 
 
 // NOTE TTimo: hey, given the number of !defined, I wonder what platform uses this
 #if !defined ( _MSC_VER ) && !defined ( __linux__ ) && !defined ( MAC_WOLF2_MP ) && !defined ( MAC_WOLF2_SP )
@@ -312,7 +314,7 @@ int toupper( int c ) {
 
 #endif
 //#ifndef _MSC_VER
-
+#ifndef _MSC_VER
 void *memmove( void *dest, const void *src, size_t count ) {
 	int i;
 
@@ -327,7 +329,7 @@ void *memmove( void *dest, const void *src, size_t count ) {
 	}
 	return dest;
 }
-
+#endif
 
 #if 0
 
@@ -619,9 +621,11 @@ double atan2( double y, double x ) {
 
 #endif
 
+#ifndef _MSC_VER
 double tan( double x ) {
 	return sin( x ) / cos( x );
 }
+#endif
 
 
 static int randSeed = 0;
