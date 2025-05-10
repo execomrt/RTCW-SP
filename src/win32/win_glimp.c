@@ -73,7 +73,8 @@ static void     GLW_InitExtensions( void );
 static rserr_t  GLW_SetMode( const char *drivername,
 							 int mode,
 							 int colorbits,
-							 qboolean cdsFullscreen );
+							 qboolean cdsFullscreen,
+	qboolean cdsBorderless);
 
 static qboolean s_classRegistered = qfalse;
 
@@ -103,7 +104,7 @@ static qboolean GLW_StartDriverAndSetMode( const char *drivername,
 										   qboolean cdsFullscreen ) {
 	rserr_t err;
 
-	err = GLW_SetMode( drivername, r_mode->integer, colorbits, cdsFullscreen );
+	err = GLW_SetMode( drivername, r_mode->integer, colorbits, cdsFullscreen, 1 );
 
 	switch ( err )
 	{
@@ -138,11 +139,7 @@ void wglewLog(const char* msg, ...)
 
 static void GLW_CreatePFD(PIXELFORMATDESCRIPTOR *pPFD, int colorbits, int depthbits, int stencilbits, int sampleCount, qboolean stereo)
 {
-#ifdef _DEBUG
 	ri_GLContext.debugBits = 0;
-#else
-	ri_GLContext.debugBits = 0;
-#endif
 	ri_GLContext.compatibilityBits = 1;
 	ri_GLContext.colorBits = colorbits;
 	ri_GLContext.depthBits = depthbits;
@@ -151,7 +148,6 @@ static void GLW_CreatePFD(PIXELFORMATDESCRIPTOR *pPFD, int colorbits, int depthb
 	ri_GLContext.stereo = stereo;
 	ri_GLContext.majorVersion = 3;
 	ri_GLContext.minorVersion = 2;
-
 	wglewInitContext(&ri_GLContext);
 	*pPFD = ri_GLContext.pixelFormatDescriptor;
 
@@ -509,7 +505,8 @@ static void PrintCDSError( int value ) {
 static rserr_t GLW_SetMode( const char *drivername,
 							int mode,
 							int colorbits,
-							qboolean cdsFullscreen ) {
+							qboolean cdsFullscreen,
+							qboolean cdsBorderless) {
 	HDC hDC;
 	const char *win_fs[] = { "W", "FS" };
 	int cdsRet;
@@ -555,9 +552,18 @@ static rserr_t GLW_SetMode( const char *drivername,
 			}
 		}
 	}
-
+	if (cdsBorderless)
+	{
+		glConfig.vidWidth = glw_state.desktopWidth;
+		glConfig.vidHeight = glw_state.desktopHeight;
+		if (!GLW_CreateWindow(drivername, glConfig.vidWidth, glConfig.vidHeight, colorbits, qtrue)) {
+			ri.Printf(PRINT_ALL, "...restoring display settings\n");
+			ChangeDisplaySettings(0, 0);
+			return RSERR_INVALID_MODE;
+		}
+	}
 	// do a CDS if needed
-	if ( cdsFullscreen ) {
+	else if ( cdsFullscreen ) {
 		memset( &dm, 0, sizeof( dm ) );
 
 		dm.dmSize = sizeof( dm );

@@ -73,22 +73,10 @@ void QGL_Shutdown( void ) {
 ** operating systems we need to do the right thing, whatever that
 ** might be.
 */
-#pragma comment( lib, "OpenGL32.lib" )
-
-#if _MSC_VER > 1900
-#include <ShellScalingAPI.h>
-#include <VersionHelpers.h>
-#pragma comment(lib, "Shcore.lib")
-#endif
 
 
 qboolean QGL_Init( const char *dllname ) {
 
-#if _MSC_VER > 1900
-	if (IsWindows8OrGreater()) {
-		SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
-	}
-#endif
 	return qtrue;
 }
 
@@ -97,8 +85,6 @@ void QGL_EnableLogging( qboolean enable ) {
 }
 
 #pragma warning (default : 4113 4133 4047 )
-
-
 
 void QGL_Log(const char *fmt, ...)
 {
