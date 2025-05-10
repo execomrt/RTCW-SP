@@ -390,7 +390,22 @@ char    *Sys_DefaultHomePath( void ) {
 	return NULL;
 }
 
+#include "steamPath.h"
+
+char* GetSteamInstallPath() {
+	static char steamPath[MAX_PATH] = { 0 };
+	if (SteamDir_GetInstallPath(9010, steamPath, sizeof(steamPath)))
+	{
+		return steamPath;
+	}
+	return NULL;
+	
+}
+
 char *Sys_DefaultInstallPath( void ) {
-	//return Sys_Cwd();
-	return "D:\\SteamLibrary\\steamapps\\common\\Return to Castle Wolfenstein";
+	char* steamPath = GetSteamInstallPath();
+	if (steamPath) {
+		return steamPath;
+	}
+	return Sys_Cwd();
 }

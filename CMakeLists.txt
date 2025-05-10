@@ -74,6 +74,7 @@ add_library(renderer STATIC ${RENDERER_SRC})
 target_compile_definitions(renderer PRIVATE __USEA3D __A3D_GEOM BUILD_FREETYPE)
 target_link_libraries(renderer PRIVATE freetype2 jpeg)
 target_include_directories(renderer PUBLIC src/glew/include)
+
 file(GLOB_RECURSE WOLFSP_SRC CONFIGURE_DEPENDS
     src/client/*.c    
     src/qcommon/*.c
@@ -82,6 +83,7 @@ file(GLOB_RECURSE WOLFSP_SRC CONFIGURE_DEPENDS
     src/glew/src/glew.c
     src/Win32/*.c
     src/win32/wglewInit.cpp
+    src/win32/steamPath.cpp
     src/win32/winquake.rc
 )
 # Exclude vm_x86.c (by full path match)
