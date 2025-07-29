@@ -132,6 +132,7 @@ void wglewLog(const char* msg, ...)
 	va_start(argptr, msg);
 	//	vsprintf( string, msg, argptr );
 	Q_vsnprintf(string, sizeof(string), msg, argptr);	// Knightmare- buffer overflow fix
+	
 	va_end(argptr);
 
 	
@@ -139,7 +140,7 @@ void wglewLog(const char* msg, ...)
 
 static void GLW_CreatePFD(PIXELFORMATDESCRIPTOR *pPFD, int colorbits, int depthbits, int stencilbits, int sampleCount, qboolean stereo)
 {
-	ri_GLContext.debugBits = 0;
+	ri_GLContext.debugBits = 1;
 	ri_GLContext.compatibilityBits = 1;
 	ri_GLContext.colorBits = colorbits;
 	ri_GLContext.depthBits = depthbits;
@@ -149,6 +150,7 @@ static void GLW_CreatePFD(PIXELFORMATDESCRIPTOR *pPFD, int colorbits, int depthb
 	ri_GLContext.majorVersion = 3;
 	ri_GLContext.minorVersion = 2;
 	wglewInitContext(&ri_GLContext);
+	
 	*pPFD = ri_GLContext.pixelFormatDescriptor;
 
 }
@@ -175,6 +177,8 @@ static int GLW_MakeContext( PIXELFORMATDESCRIPTOR *pPFD ) {
 	// reset of the graphics system)
 	//
 	if ( !glw_state.pixelFormatSet ) {
+
+
 		//
 		// choose, set, and describe our desired pixel format.  If we're
 		// using a minidriver then we need to bypass the GDI functions,
@@ -283,7 +287,7 @@ static qboolean GLW_InitDriver( const char *drivername, int colorbits ) {
 	// first attempt: r_colorbits, depthbits, and r_stencilbits
 	//
 	if ( !glw_state.pixelFormatSet ) {
-		GLW_CreatePFD( &pfd, colorbits, depthbits, stencilbits, r_ati_fsaa_samples->integer, r_stereo->integer );
+			GLW_CreatePFD( &pfd, colorbits, depthbits, stencilbits, r_ati_fsaa_samples->integer, r_stereo->integer );
 		if ( ( tpfd = GLW_MakeContext( &pfd ) ) != TRY_PFD_SUCCESS ) {
 			if ( tpfd == TRY_PFD_FAIL_HARD ) {
 				ri.Printf( PRINT_WARNING, "...failed hard\n" );

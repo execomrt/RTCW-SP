@@ -353,7 +353,7 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 
 	tr.frameCount++;
 	tr.frameSceneNum = 0;
-
+	glClear(GL_COLOR_BUFFER_BIT);
 	//
 	// do overdraw measurement
 	//

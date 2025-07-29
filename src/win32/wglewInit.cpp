@@ -33,8 +33,24 @@
 #include "GL/glew.h"
 #include "GL/wglew.h"
 #include "wglewInit.h"
+#include <stdio.h>
 
 #pragma comment(lib, "opengl32.lib")
+
+void LogV(const char* msg, ...)
+{
+	va_list argptr;
+	char string[32000];
+
+	va_start(argptr, msg);
+	
+	vsnprintf(string, sizeof(string), msg, argptr);	// Knightmare- buffer overflow fix
+
+	OutputDebugStringA(string);
+	va_end(argptr);
+
+
+}
 
 static void CALLBACK _wglewCallbackDebug(GLenum source, GLenum type, GLuint id, GLenum severity,
 										 GLsizei length, const GLchar* message, const void* userParam)
@@ -42,192 +58,218 @@ static void CALLBACK _wglewCallbackDebug(GLenum source, GLenum type, GLuint id, 
 	userParam;
 	length;
 
-	wglewLog("\n---------------------opengl-callback-start------------\n");
-	wglewLog("message: %s\n", message);
-	wglewLog("source: %d\n", source);
-	wglewLog("\ttype: ");
+	LogV("\n---------------------opengl-callback-start------------\n");
+	LogV("message: %s\n", message);
+	LogV("source: %d\n", source);
+	LogV("\ttype: ");
 	switch (type) {
 	case GL_DEBUG_TYPE_ERROR:
-		wglewLog("\tERROR\n");
+		LogV("\tERROR\n");
 		break;
 	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-		wglewLog("\tDEPRECATED_BEHAVIOR\n");
+		LogV("\tDEPRECATED_BEHAVIOR\n");
 		break;
 	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-		wglewLog("\tUNDEFINED_BEHAVIOR\n");
+		LogV("\tUNDEFINED_BEHAVIOR\n");
 		break;
 	case GL_DEBUG_TYPE_PORTABILITY:
-		wglewLog("\tPORTABILITY\n");
+		LogV("\tPORTABILITY\n");
 		break;
 	case GL_DEBUG_TYPE_PERFORMANCE:
-		wglewLog("\tPERFORMANCE\n");
+		LogV("\tPERFORMANCE\n");
 		break;
 	case GL_DEBUG_TYPE_OTHER:
-		wglewLog("\tOTHER\n");
+		LogV("\tOTHER\n");
 		break;
 	}
 
-	wglewLog("\t\tid: %d\n", id);
-	wglewLog("\t\tseverity: ");
+	LogV("\t\tid: %d\n", id);
+	LogV("\t\tseverity: ");
 	switch (severity) {
 	case GL_DEBUG_SEVERITY_LOW:
-		wglewLog("LOW\n");
+		LogV("LOW\n");
 		break;
 	case GL_DEBUG_SEVERITY_MEDIUM:
-		wglewLog("MEDIUM\n");
+		LogV("MEDIUM\n");
 		break;
 	case GL_DEBUG_SEVERITY_HIGH:
-		wglewLog("HIGH\n");
+		LogV("HIGH\n");
 		break;
 	default:
-		wglewLog("OTHER\n");
+		LogV("OTHER\n");
 		break;
 
 	}
 
-	wglewLog("---------------------opengl-callback-end--------------\n");
+	LogV("---------------------opengl-callback-end--------------\n");
 
 
 }
 
+#define ADD_ATTRIBi(a, b) do { \
+    iAttrbList[iAttrbCount++] = (a); \
+    iAttrbList[iAttrbCount++] = (b); \
+    LogV("  - Int Attribute: 0x%x = %d\n", (a), (b)); \
+} while(0)
+
+#define ADD_ATTRIBf(a, b) do { \
+    fAttrbList[iAttrbCount++] = (a); \
+    fAttrbList[iAttrbCount++] = (b); \
+    LogV("  - Float Attribute: 0x%x = %f\n", (a), (b)); \
+} while(0)
+
 
 static int wglewChoosePixelFormat(wglewContext* context, HDC hDC)
 {
-#define ADD_ATTRIBi(a, b) iAttrbList[iAttrbCount++] = a; iAttrbList[iAttrbCount++] = b;
-#define ADD_ATTRIBf(a, b) fAttrbList[iAttrbCount++] = a; fAttrbList[iAttrbCount++] = b;
 
 	GLfloat fAttrbList[32] = { 0 };
 	GLint iAttrbList[32] = { 0 };
 	GLint iCompatiblesFormats[32] = { 0 };
-	for (;;)
-	{
-		GLint iAttrbCount = 0;
 
-		if (WGLEW_ARB_multisample)
-		{
-			int iNumPixelFormats = 0;
-			int sampleCountMax = 0;
-			GLint values[2];
+	LogV("=== Choosing Pixel Format ===\n");
 
-			iAttrbList[0] = WGL_NUMBER_PIXEL_FORMATS_ARB;
+	GLint values[2] = { 0 };
+	iAttrbList[0] = WGL_NUMBER_PIXEL_FORMATS_ARB;
+	iAttrbList[1] = 0;
+
+	int maxSamples = 0;
+	if (wglGetPixelFormatAttribivARB(hDC, 0, 0, 1, iAttrbList, values)) {
+		int numPixelFormats = values[0];
+		
+		LogV("%d pixels format ===\n", numPixelFormats);
+		for (int i = 0; i < numPixelFormats; i++) {
+			iAttrbList[0] = WGL_SAMPLES_ARB;
 			iAttrbList[1] = 0;
-
-			BOOL ret = wglGetPixelFormatAttribivARB(hDC, 0, 0, 1, iAttrbList, values);
-			iNumPixelFormats = values[0];
-			for (int i = 0; i < iNumPixelFormats; i++)
-			{
-				iAttrbList[0] = WGL_SAMPLES_ARB;
-				iAttrbList[1] = 0;
-				ret = wglGetPixelFormatAttribivARB(hDC, i + 1, 0, 1, iAttrbList, values);
-				sampleCountMax = max(sampleCountMax, values[0]);
+			if (wglGetPixelFormatAttribivARB(hDC, i + 1, 0, 1, iAttrbList, values)) {
+				maxSamples = max(maxSamples, values[0]);
 			}
 		}
 
+		LogV("Max sample count supported: %d\n", maxSamples);
+	}
+
+	while (true)
+	{
 		GLuint numFormats = 0;
+		GLint iAttrbCount = 0;
+
+		// Query maximum sample count if multisampling is supported
+		if (WGLEW_ARB_multisample)
+		{
+			
+		}
 
 		if (WGLEW_ARB_pixel_format)
 		{
+			LogV("Trying WGL_ARB_pixel_format...\n");
+
 			ADD_ATTRIBi(WGL_SUPPORT_OPENGL_ARB, GL_TRUE);
 			ADD_ATTRIBi(WGL_DOUBLE_BUFFER_ARB, GL_TRUE);
-			ADD_ATTRIBi(WGL_ACCELERATION_ARB, context->noAcceleration ? WGL_NO_ACCELERATION_ARB : WGL_ACCELERATION_ARB);
-
-			ADD_ATTRIBi(WGL_COLOR_BITS_ARB, context->colorBits);
+			ADD_ATTRIBi(WGL_ACCELERATION_ARB, context->noAcceleration ? WGL_NO_ACCELERATION_ARB : WGL_FULL_ACCELERATION_ARB);
+			ADD_ATTRIBi(WGL_DRAW_TO_WINDOW_ARB, GL_TRUE);
+			ADD_ATTRIBi(WGL_COLOR_BITS_ARB, context->colorBits);			
 			ADD_ATTRIBi(WGL_DEPTH_BITS_ARB, context->depthBits);
 
-			if (context->stencilBits != 0) {
+			if (context->stencilBits)
 				ADD_ATTRIBi(WGL_STENCIL_BITS_ARB, context->stencilBits);
-			}
-
-			if (context->stereo != 0) {
+			if (context->stereo)
 				ADD_ATTRIBi(WGL_STEREO_ARB, GL_TRUE);
-			}
-
 			if (context->sampleCount > 1) {
 				ADD_ATTRIBi(WGL_SAMPLE_BUFFERS_ARB, GL_TRUE);
 				ADD_ATTRIBi(WGL_SAMPLES_ARB, context->sampleCount);
 			}
 
-			if (wglChoosePixelFormatARB(hDC,
-				iAttrbList,
-				fAttrbList,
-				1,
-				iCompatiblesFormats,
-				&numFormats) == GL_TRUE) {
-
+			if (wglChoosePixelFormatARB(hDC, iAttrbList, fAttrbList, 1, iCompatiblesFormats, &numFormats) && numFormats > 0) {
+				LogV("Pixel format selected via ARB.\n");
 				break;
+			}
+			else {
+				LogV("wglChoosePixelFormatARB failed or returned 0 formats.\n");
 			}
 		}
 		else if (WGLEW_EXT_pixel_format)
 		{
+			LogV("Trying WGL_EXT_pixel_format...\n");
+
 			ADD_ATTRIBi(WGL_DOUBLE_BUFFER_EXT, GL_TRUE);
 			ADD_ATTRIBi(WGL_DRAW_TO_WINDOW_EXT, GL_TRUE);
 			ADD_ATTRIBi(WGL_ACCELERATION_EXT, context->noAcceleration ? WGL_NO_ACCELERATION_EXT : WGL_ACCELERATION_EXT);
 			ADD_ATTRIBi(WGL_COLOR_BITS_EXT, context->colorBits);
 			ADD_ATTRIBi(WGL_DEPTH_BITS_EXT, context->depthBits);
+
 			if (context->sampleCount > 1) {
 				ADD_ATTRIBi(WGL_SAMPLE_BUFFERS_EXT, GL_TRUE);
 				ADD_ATTRIBi(WGL_SAMPLES_EXT, context->sampleCount);
 			}
 
-			if (wglChoosePixelFormatEXT(hDC,
-				iAttrbList,
-				fAttrbList,
-				1,
-				iCompatiblesFormats,
-				&numFormats) == GL_TRUE) {
-
+			if (wglChoosePixelFormatEXT(hDC, iAttrbList, fAttrbList, 1, iCompatiblesFormats, &numFormats) && numFormats > 0) {
+				LogV("Pixel format selected via EXT.\n");
 				break;
 			}
-
+			else {
+				LogV("wglChoosePixelFormatEXT failed or returned 0 formats.\n");
+			}
 		}
 		else
 		{
-			// back in the days ...
-			PIXELFORMATDESCRIPTOR pfd =			// pfd Tells Windows How We Want Things To Be
-			{
-				sizeof(PIXELFORMATDESCRIPTOR),	// Size Of This Pixel Format Descriptor
-				1,								// Version Number
-				PFD_SUPPORT_OPENGL | 
-				PFD_DRAW_TO_WINDOW |				
-				PFD_DOUBLEBUFFER,				// Must Support Double Buffering
-				PFD_TYPE_RGBA,					// Request An RGBA Format
-				(BYTE) context->colorBits,				// Select Our Color Depth
-				0, 0, 0, 0, 0, 0,				// Color Bits Ignored
-				0,								// No Alpha Buffer
-				0,								// Shift Bit Ignored
-				0,								// No Accumulation Buffer
-				0, 0, 0, 0,						// Accumulation Bits Ignored
-				(BYTE) context->depthBits,				// 16Bit Z-Buffer (Depth Buffer)
-				(BYTE) context->stencilBits,			// No Stencil Buffer
-				0,								// No Auxiliary Buffer
-				PFD_MAIN_PLANE,					// Main Drawing Layer
-				0,								// Reserved
-				0, 0, 0							// Layer Masks Ignored
+			LogV("Falling back to legacy ChoosePixelFormat...\n");
+
+			PIXELFORMATDESCRIPTOR pfd = {
+				sizeof(PIXELFORMATDESCRIPTOR),
+				1,
+				PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER,
+				PFD_TYPE_RGBA,
+				(BYTE)context->colorBits,
+				0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0,
+				(BYTE)context->depthBits,
+				(BYTE)context->stencilBits,
+				0,
+				PFD_MAIN_PLANE,
+				0, 0, 0, 0
 			};
 
 			iCompatiblesFormats[0] = ChoosePixelFormat(hDC, &pfd);
 
 			if (iCompatiblesFormats[0]) {
+				LogV("Pixel format selected via legacy ChoosePixelFormat.\n");
 				break;
 			}
-
+			else {
+				LogV("ChoosePixelFormat failed.\n");
+			}
 		}
 
-
+		// Fallback logic
+		LogV("Pixel format selection failed. Trying fallback adjustments...\n");
 		if (context->stereo) {
 			context->stereo = 0;
+			LogV("Disabling stereo and retrying.\n");
 		}
 		else if (context->sampleCount) {
 			context->sampleCount = 0;
+			LogV("Disabling multisampling and retrying.\n");
+		}
+		else if (context->stencilBits) {
+			context->stencilBits = 0;
+			LogV("Disabling stencil buffer and retrying.\n");
+		}
+		else if (context->depthBits == 24) {
+			context->depthBits = 16;
+			LogV("Reducing depth bits to 16 and retrying.\n");
 		}
 		else if (context->colorBits == 32) {
 			context->colorBits = 16;
+			LogV("Reducing color bits to 16 and retrying.\n");
+		}
+		else {
+			LogV("No more fallbacks available. Aborting pixel format selection.\n");
+			break;
 		}
 	}
 
-
+	LogV("Final selected format: %d\n", iCompatiblesFormats[0]);
 	return iCompatiblesFormats[0];
-
 }
 
 int wglewDescribePixelFormat(wglewContext* context, HDC hDC)
@@ -315,9 +357,9 @@ int wglewInitContext(wglewContext* context)
 	wcTemp.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
 	wcTemp.lpfnWndProc = DefWindowProc;
 #ifdef UNICODE
-	wcTemp.lpszClassName = L"DummyGL";
+	wcTemp.lpszClassName = L"DummyGL2";
 #else
-	wcTemp.lpszClassName = "DummyGL";
+	wcTemp.lpszClassName = "DummyGL2";
 #endif
 
 	if (!RegisterClass(&wcTemp))
@@ -340,14 +382,40 @@ int wglewInitContext(wglewContext* context)
 	}
 
 	pfdTemp = ChoosePixelFormat(hDCTemp, &context->pixelFormatDescriptor);
-	SetPixelFormat(hDCTemp, pfdTemp, &context->pixelFormatDescriptor);
+	if (pfdTemp == 0)
+	{
+		ReleaseDC(hWndTemp, hDCTemp);
+		if (!UnregisterClass(wcTemp.lpszClassName, wcTemp.hInstance))
+		{
+		}
+		DestroyWindow(hWndTemp);
+		return -4;
+	}
+	if (!SetPixelFormat(hDCTemp, pfdTemp, &context->pixelFormatDescriptor))
+	{
+		ReleaseDC(hWndTemp, hDCTemp);
+		if (!UnregisterClass(wcTemp.lpszClassName, wcTemp.hInstance))
+		{
+		}
+		DestroyWindow(hWndTemp);
+		return -5;
+	}
 	hGLRCTemp = wglCreateContext(hDCTemp);
 	wglMakeCurrent(hDCTemp, hGLRCTemp);
-
 	glewInit();
 		
 	context->pixelFormatIndex = wglewChoosePixelFormat(context, hDCTemp);
-
+	if (context->pixelFormatIndex < 0)
+	{
+		wglDeleteContext(hGLRCTemp);
+		ReleaseDC(hWndTemp, hDCTemp);
+		if (!UnregisterClass(wcTemp.lpszClassName, wcTemp.hInstance))
+		{
+		}
+		DestroyWindow(hWndTemp);
+		return -6;
+	}
+	DescribePixelFormat(hDCTemp, context->pixelFormatIndex, sizeof(PIXELFORMATDESCRIPTOR), &context->pixelFormatDescriptor);
 	wglMakeCurrent(NULL, NULL);
 	ReleaseDC(hWndTemp, hDCTemp);
 	wglDeleteContext(hGLRCTemp);
