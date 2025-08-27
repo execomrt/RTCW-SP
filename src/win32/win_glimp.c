@@ -145,7 +145,7 @@ static void GLW_CreatePFD(PIXELFORMATDESCRIPTOR *pPFD, int colorbits, int depthb
 	ri_GLContext.colorBits = colorbits;
 	ri_GLContext.depthBits = depthbits;
 	ri_GLContext.stencilBits = stencilbits;
-	ri_GLContext.sampleCount = sampleCount;
+	ri_GLContext.sampleCount = 16; // FIXME
 	ri_GLContext.stereo = stereo;
 	ri_GLContext.majorVersion = 3;
 	ri_GLContext.minorVersion = 2;
